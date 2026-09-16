@@ -43,9 +43,7 @@ http://localhost:3000
 
 Live: [brainweight-production.up.railway.app](https://brainweight-production.up.railway.app)
 
-Local clock: the 47-neuron heading motif, every frame. Sliders for K (depth) and N (stacks, a window of at most 8). Click the ring to set a target heading. The stack has to turn and catch it. Score is `(1 + cos(error)) / 2`. J kicks the stacks so they lose the lock and must reacquire. If you leave it, the target walks and the bump hunts. H hides chrome. Space pauses. A thought log writes regime, circuit, score, and error. That is an autopsy, not a voice. Telemetry also names the live circuit (EPG, PEN, PEG, Delta7, EL) and the slow glia field `g`.
-
-The weight run is not the window. After a gesture and 8s, `/think/mass` stacks the same 47-cell motif 18,850,000 times on one L4 (1508 g / 80 μg) and seeks the same target. That count is the wet-mass equivalent of a human brain, including connective tissue. The 80 μg is estimated from Zheng volume, not a weighing. At that weight `g` uses a human cell-count fraction (~0.5), labeled an estimate, not a weighing. The motif is not a whole fly brain. Stacking it to the same grams does not grow human tissue. Watch `score`, `intf`, and `reg` for what the tissue does at that weight.
+The brain is 18,850,000 copies of the 47-cell motif, stacked and looped on one L4. That is the spec. The rings are a window (at most 8). After a gesture and 8s, `/think/mass` keeps that 1.9e7 stack live and steps it. N in telemetry is 1.9e7. Wet mass at that count is 1508 g / 80 μg, estimated from Zheng volume, not a weighing. The motif is not a whole fly. Stacking it to the same grams does not grow human tissue.
 
 Deep clock: Modal L4 on `modal_mind/fly-deep.json` (754 / 7200), proxied at `/think`. Scale to zero. No GPU on first paint, in the first 8s, or before a gesture. No websocket.
 

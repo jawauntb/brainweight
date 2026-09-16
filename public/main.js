@@ -145,7 +145,7 @@ function setPanels(next) {
 
 function writeTelemetry(m) {
   tK.textContent = String(m.K);
-  tN.textContent = String(m.N);
+  tN.textContent = formatCopies(TARGET_COPIES);
   tR.textContent = fmt(m.order, 2);
   tCorr.textContent = fmt(m.corr, 2);
   tRes.textContent = fmt(m.residual, 3);
@@ -157,10 +157,16 @@ function writeTelemetry(m) {
   if (tG) tG.textContent = fmt(m.g, 2);
   const remote = thinkStats();
   const weighed = massStats();
-  if (tGpu) tGpu.textContent = remote.ok ? (remote.device || "L4") : (remote.reason || "local");
+  if (tGpu) {
+    if (weighed && weighed.ok) tGpu.textContent = weighed.device || "L4";
+    else tGpu.textContent = remote.ok ? (remote.device || "L4") : (remote.reason || "local");
+  }
   if (tMass) {
     if (weighed && weighed.ok) {
-      tMass.textContent = `${formatCopies(weighed.N)}/${formatCopies(TARGET_COPIES)}`;
+      tN.textContent = formatCopies(weighed.N || TARGET_COPIES);
+      tMass.textContent = weighed.live
+        ? `${formatCopies(weighed.N)} live ${weighed.steps || 0}`
+        : `${formatCopies(weighed.N)}/${formatCopies(TARGET_COPIES)}`;
       if (tReg && weighed.regime && !m.gesture) tReg.textContent = weighed.regime;
       if (tIntf && Number.isFinite(weighed.intf)) tIntf.textContent = fmt(weighed.intf, 2);
       if (tScore && Number.isFinite(weighed.score)) tScore.textContent = fmt(weighed.score, 2);

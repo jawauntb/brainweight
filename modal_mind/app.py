@@ -29,7 +29,7 @@ app = modal.App("brainweight-mind", image=image)
 
 _cache = {"g": None, "src": None, "dst": None, "w": None, "ports": None, "state": None}
 _cx = {"g": None, "src": None, "dst": None, "w": None, "templates": None, "epg": None}
-_mass_last = None
+_mass_live = {"v": None, "N": None, "steps": 0, "target": None}
 
 
 def _load():
@@ -186,6 +186,7 @@ def _run_mass(N, K, target=0.0, glia_frac=HUMAN_GLIA):
     import math
     import torch
 
+    N = TARGET_COPIES
     _load_cx()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     g = _cx["g"]
@@ -195,17 +196,34 @@ def _run_mass(N, K, target=0.0, glia_frac=HUMAN_GLIA):
     w = _cx["w"].to(device)
     templates = _cx["templates"].to(device)
     epg = _cx["epg"]
-    pick = (torch.arange(N, device=device) * 7 + 3) % templates.shape[0]
-    v = templates.index_select(0, pick)
     nodes = g["nodes"]
-    bx = math.cos(target)
-    by = math.sin(target)
-    cue = torch.tensor(
-        [math.exp(-3.2 * ((nd["x"] - bx) ** 2 + (nd["y"] - by) ** 2)) for nd in nodes],
-        dtype=torch.float32,
-        device=device,
-    )
-    v = (v * 0.38 + 0.42 * cue).clamp(-1, 1)
+    live = _mass_live
+    if live["v"] is not None and live["N"] == N and live["v"].shape[0] == N:
+        v = live["v"]
+        if live["target"] is None or abs(float(live["target"]) - float(target)) > 1e-4:
+            bx = math.cos(target)
+            by = math.sin(target)
+            cue = torch.tensor(
+                [math.exp(-3.2 * ((nd["x"] - bx) ** 2 + (nd["y"] - by) ** 2)) for nd in nodes],
+                dtype=torch.float32,
+                device=device,
+            )
+            v = (v * 0.38 + 0.42 * cue).clamp(-1, 1)
+            live["target"] = target
+    else:
+        pick = (torch.arange(N, device=device) * 7 + 3) % templates.shape[0]
+        v = templates.index_select(0, pick)
+        bx = math.cos(target)
+        by = math.sin(target)
+        cue = torch.tensor(
+            [math.exp(-3.2 * ((nd["x"] - bx) ** 2 + (nd["y"] - by) ** 2)) for nd in nodes],
+            dtype=torch.float32,
+            device=device,
+        )
+        v = (v * 0.38 + 0.42 * cue).clamp(-1, 1)
+        live["N"] = N
+        live["steps"] = 0
+        live["target"] = target
     pred = v[-1].clone()
     g_field = 0.0
     gain_scale = 1.0
@@ -228,6 +246,9 @@ def _run_mass(N, K, target=0.0, glia_frac=HUMAN_GLIA):
         v = v - v.mean(dim=1, keepdim=True) * 0.40
         v = v.clamp(-1, 1)
         del inc
+    live["v"] = v
+    live["N"] = N
+    live["steps"] = int(live.get("steps") or 0) + K
     residual = float(torch.sqrt(((pred - v[0]) ** 2).mean()).item())
     if N < 2:
         corr = 1.0
@@ -324,24 +345,24 @@ def _run_mass(N, K, target=0.0, glia_frac=HUMAN_GLIA):
         "g": g_field,
         "gain": 0.072 * gain_scale,
         "glia_frac": glia_frac,
+        "steps": live["steps"],
+        "live": True,
     }
 
 
 @app.function(
     gpu="L4",
     timeout=600,
-    scaledown_window=120,
+    scaledown_window=600,
     secrets=[modal.Secret.from_name("brainweight-think")],
 )
 @modal.fastapi_endpoint(method="POST")
 def think(body: dict):
-    global _mass_last
     token = (body or {}).get("token") or ""
     if token != os.environ.get("THINK_TOKEN", ""):
         return {"ok": False, "error": "unauthorized"}
     if (body or {}).get("mode") == "mass":
-        N = int((body or {}).get("N") or TARGET_COPIES)
-        N = max(1, min(N, TARGET_COPIES))
+        N = TARGET_COPIES
         K = int((body or {}).get("K") or 4)
         K = max(1, min(K, 16))
         target = float((body or {}).get("target") or 0.0)
@@ -350,13 +371,9 @@ def think(body: dict):
             glia_frac = 0.0
         if glia_frac > 1:
             glia_frac = 1.0
-        cache_key = (N, K, round(target, 2), round(glia_frac, 2))
-        if _mass_last and _mass_last.get("cache_key") == cache_key:
-            return {k: v for k, v in _mass_last.items() if k != "cache_key"}
         t0 = time.time()
         out = _run_mass(N, K, target, glia_frac)
         out["ms"] = round((time.time() - t0) * 1000, 1)
-        _mass_last = {**out, "cache_key": cache_key}
         return out
     minds = (body or {}).get("minds") or []
     if not minds or len(minds) > 16:

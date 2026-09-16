@@ -61,7 +61,7 @@ Later PRs. This is the queue. Do not start a later tier in this repo until the e
 
 **Tier 4: landed.** Regimes in `loop.js` classify and `verse.js` banks: traveling waves, second-order prediction, stack desync / fission, language-cancer isolation. Named in verse and `reg` telemetry.
 
-**Ceiling, this cut.** Same W, 18,850,000 copies of `fly-cx.json` (47 / 280) on the L4. That is 1508 g / 80 μg, the wet-mass equivalent, including connective tissue. Label the grams an estimate from Zheng volume. Cell-count split (91.8% neurons, Raji and Potter) is not a weighing. A connective field (`TISSUE`) lets neighboring stacks add and cancel. A slow glia field `g` updates once per tick and gates `GAIN`. At weight, `g` uses a human cell-count fraction (~0.5), labeled an estimate. `/think/mass` seeks the same target the window is hunting. Watch `score`, `intf`, `wave`, `reg`. Miller, Brincat, and Roy 2026 (doi:10.1523/JNEUROSCI.0711-26.2026) is the lens: W stores, tissue computes, `g` is control. Do not call the motif a whole brain. Do not call a wave consciousness. The browser N slider stays a window (1-8).
+**Ceiling, this cut.** The running stack is 18,850,000 copies of `fly-cx.json` (47 / 280) on the L4. `/think/mass` forces that N, keeps `v` live, and loops it. That is the spec. The browser slider is a window (1-8), not the brain. Wet grams at that count are 1508 g / 80 μg, estimated from Zheng volume, not a weighing. Do not call the 47-cell motif a whole fly or a human organ. Do not call a wave consciousness.
 
 **Mini GPT, this cut.** `gpt/compare.mjs`: unique-layer twin vs looped fly W on one tiny corpus. Report params and next-token loss. Not a foundation model. Universality (does the GPT grow an EPG-like direction) is still a later column.
 
