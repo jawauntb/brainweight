@@ -1,7 +1,7 @@
 import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander } from "./loop.js";
 import { line } from "./verse.js";
 import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
-import { formatGrams, formatCopies, TARGET_COPIES } from "./mass.js";
+import { formatGrams, formatCopies, TARGET_COPIES, HUMAN_G, wetGrams } from "./mass.js";
 
 const NACRE_SIZE = 96;
 const PEARL = "246, 214, 122";
@@ -38,6 +38,7 @@ const tErr = document.getElementById("t-err");
 const tG = document.getElementById("t-g");
 const tGpu = document.getElementById("t-gpu");
 const tMass = document.getElementById("t-mass");
+const tPair = document.getElementById("t-pair");
 const thoughtsEl = document.getElementById("thoughts");
 const thoughtLog = [];
 
@@ -161,18 +162,22 @@ function writeTelemetry(m) {
     if (weighed && weighed.ok) tGpu.textContent = weighed.device || "L4";
     else tGpu.textContent = remote.ok ? (remote.device || "L4") : (remote.reason || "local");
   }
+  if (tPair) tPair.textContent = (weighed && weighed.ok && weighed.pair === false) ? "W" : "W+T";
   if (tMass) {
     if (weighed && weighed.ok) {
       tN.textContent = formatCopies(weighed.N || TARGET_COPIES);
+      const grams = formatGrams(weighed.mass_g || wetGrams(weighed.N || TARGET_COPIES));
       tMass.textContent = weighed.live
-        ? `${formatCopies(weighed.N)} live ${weighed.steps || 0}`
-        : `${formatCopies(weighed.N)}/${formatCopies(TARGET_COPIES)}`;
+        ? `${grams}/${formatGrams(HUMAN_G)} live ${weighed.steps || 0}`
+        : `${grams}/${formatGrams(HUMAN_G)}`;
+      if (tRes && Number.isFinite(weighed.residual)) tRes.textContent = fmt(weighed.residual, 3);
+      if (tCorr && Number.isFinite(weighed.corr)) tCorr.textContent = fmt(weighed.corr, 2);
       if (tReg && weighed.regime && !m.gesture) tReg.textContent = weighed.regime;
       if (tIntf && Number.isFinite(weighed.intf)) tIntf.textContent = fmt(weighed.intf, 2);
       if (tScore && Number.isFinite(weighed.score)) tScore.textContent = fmt(weighed.score, 2);
       if (tErr && Number.isFinite(weighed.error)) tErr.textContent = fmt(weighed.error, 2);
     } else {
-      tMass.textContent = `${formatGrams(m.mass_g)}/${formatCopies(TARGET_COPIES)}`;
+      tMass.textContent = `${formatGrams(wetGrams(TARGET_COPIES))}/${formatGrams(HUMAN_G)}`;
     }
   }
 }

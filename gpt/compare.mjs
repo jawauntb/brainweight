@@ -1,4 +1,4 @@
-// Mini GPT twins: unique layers vs looped fly motif W.
+// Mini GPT twins: unique layers vs looped fly unit (W then T).
 // Node ESM. Exit 0 and print a table plus PASS. Exit 1 on failure.
 // Not a foundation model. Same tiny corpus, same steps.
 
@@ -211,6 +211,6 @@ if (looped.cells !== 47) fail(`looped twin cells ${looped.cells} != 47`);
 process.stdout.write(
   "twin        params  layers  K  loss\n" +
     `unique      ${String(unique.params).padStart(6)}      ${unique.layers}  -  ${unique.loss.toFixed(4)}\n` +
-    `looped W    ${String(looped.params).padStart(6)}      ${looped.layers}  ${looped.K}  ${looped.loss.toFixed(4)}\n`
+    `looped W+T  ${String(looped.params).padStart(6)}      ${looped.layers}  ${looped.K}  ${looped.loss.toFixed(4)}\n`
 );
 process.stdout.write("PASS\n");

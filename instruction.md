@@ -45,7 +45,7 @@ Look the PDFs up if you need them. Write from this.
 - **Giannou et al. 2023, ICML, "Looped Transformers as Programmable Computers"** (arXiv 2301.13196): freeze a shallow transformer, feed output back as input. Depth of the net does not scale with program length. K loops do. A looped 13-layer net can emulate a computer.
 - **Universal Transformers, Dehghani et al. 2018** (arXiv 1807.03819): tied weights across depth, optional ACT halt. Turing-complete with enough memory. Equivalent to a multi-layer transformer with shared parameters.
 
-Mechanic for us: one compiled fly motif W. N stacked copies, vertically coupled (layer i reads i-1; top reaffers into bottom). Each tick, apply the same W, K times. K is cognitive depth. N is population. Emergence is a regime that neither N=1 nor K=1 can make.
+Mechanic for us: one unit is the compiled fly motif W plus a tiny shared transformer T. N stacked units, vertically coupled (layer i reads i-1; top reaffers into bottom). Each tick, apply the same unit, K times. W first, then T. K is cognitive depth. N is population. Pairing cuts motif copies by half. Emergence is a regime that neither N=1 nor K=1 can make.
 
 ## 4. What we will build
 
@@ -61,9 +61,9 @@ Later PRs. This is the queue. Do not start a later tier in this repo until the e
 
 **Tier 4: landed.** Regimes in `loop.js` classify and `verse.js` banks: traveling waves, second-order prediction, stack desync / fission, language-cancer isolation. Named in verse and `reg` telemetry.
 
-**Ceiling, this cut.** The running stack is 18,850,000 copies of `fly-cx.json` (47 / 280) on the L4. `/think/mass` forces that N, keeps `v` live, and loops it. That is the spec. The browser slider is a window (1-8), not the brain. Wet grams at that count are 1508 g / 80 μg, estimated from Zheng volume, not a weighing. Do not call the 47-cell motif a whole fly or a human organ. Do not call a wave consciousness.
+**Ceiling, this cut.** The running stack is 9,425,000 paired units of `fly-cx.json` (47 / 280) plus one shared frozen T (8-d, one head). `/think/mass` forces that N, keeps `v` live, and loops W then T. That is the spec. Pairing is why N is half of 1.9e7. The browser slider is a window (1-8), not the stack. Motif wet grams at that count are 754 g / 80 μg, estimated from Zheng volume, not a weighing. Do not report 1508 g / 1508 g. Do not call the 47-cell motif a whole fly or a human organ. Do not call a wave consciousness.
 
-**Mini GPT, this cut.** `gpt/compare.mjs`: unique-layer twin vs looped fly W on one tiny corpus. Report params and next-token loss. Not a foundation model. Universality (does the GPT grow an EPG-like direction) is still a later column.
+**Mini GPT, this cut.** `gpt/compare.mjs`: unique-layer twin vs looped fly unit (W then T) on one tiny corpus. Report params and next-token loss. Not a foundation model. Universality (does the GPT grow an EPG-like direction) is still a later column.
 
 **Ship.** Commit and PR as soon as a check passes. See `AGENTS.md`.
 

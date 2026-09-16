@@ -70,9 +70,9 @@ const BANK = {
     "Waiting for a bump to lock.",
   ],
   weight: [
-    "The stack now weighs a human brain.",
-    "1.9e7 copies, neurons plus connective tissue.",
-    "Same wet mass. Still a fly motif.",
+    "Half the motif count. Each unit brings a transformer.",
+    "9.4e6 paired units. Motif grams are not a human brain.",
+    "Same W, same T, stacked and looped. Still a fly ring.",
   ],
   epg: [
     "The compass is bumping north.",

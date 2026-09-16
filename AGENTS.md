@@ -31,7 +31,7 @@ Do not force-push. Do not skip hooks. Do not commit secrets, `.env`, or `THINK_T
 - Local: `npm start` → http://localhost:3000
 - `/healthz` must return `ok`
 - Railway project: `brainweight`. Deploy from the repo root, not `modal_mind/`.
-- Modal app: `brainweight-mind`. `/think` is the deep clock. `/think/mass` is the 1.9e7 weight run.
+- Modal app: `brainweight-mind`. `/think` is the deep clock. `/think/mass` is the 9.4e6 W+T unit run.
 
 ## Do not
 

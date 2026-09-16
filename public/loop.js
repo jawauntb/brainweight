@@ -1,9 +1,8 @@
-// Looped / stacked fly-connectome engine.
-// One compiled motif W. N copies, vertically coupled. Each tick applies W, K times.
-// Graph loaded at runtime from /data/fly-cx.json (Janelia male-cns:v1.0, CC-BY).
-// Visual N is a window. Human wet-mass equivalent is TARGET_COPIES in mass.js.
+// Looped / stacked units. One unit is the fly motif W plus a tiny shared transformer T.
+// N units, coupled. Each tick applies the unit, K times. Same W and same T every loop.
+// Graph from /data/fly-cx.json (Janelia male-cns:v1.0, CC-BY). Visual N is a window.
 
-import { HUMAN_G, TARGET_COPIES, wetGrams, massFraction, splitGrams } from "./mass.js";
+import { HUMAN_G, TARGET_COPIES, MOTIF_FULL, wetGrams, massFraction, motifFraction, splitGrams } from "./mass.js";
 
 const COUPLE = 0.12;
 const TISSUE = 0.05;
@@ -17,6 +16,11 @@ const FLY_GLIA = 0.082;
 const GLIA_ALPHA = 1.15;
 const SEEK_TURN = 0.42;
 const HOLD_AMP = 0.55;
+const TD = 8;
+const T_FF = 16;
+const T_MIX = 0.18;
+
+let Tw = null;
 
 let memo = null;
 
@@ -57,9 +61,11 @@ export function create(graph, { N = 3, K = 4 } = {}) {
     g: null,
     gMean: 0,
     gainEff: GAIN,
+    pair: true,
     _pred: null,
     _inc: null,
     _scratch: null,
+    _tbuf: null,
   };
   setN(world, N);
   return world;
@@ -80,6 +86,12 @@ export function setN(world, N) {
   world._pred = new Float32Array(n);
   world._inc = new Float32Array(n);
   world._scratch = new Float32Array(next * n);
+  world._tbuf = {
+    q: new Float32Array(n * TD),
+    k: new Float32Array(n * TD),
+    vp: new Float32Array(n * TD),
+    score: new Float32Array(n),
+  };
   world.residual = 0;
   const { heading } = epgOrder(world);
   world.drive = heading;
@@ -166,8 +178,74 @@ export function applyMotif(v, graph, K, gain) {
   const inc = new Float32Array(v.length);
   const loops = clampInt(K, 1, 16);
   const g = Number.isFinite(gain) ? gain : GAIN;
-  for (let k = 0; k < loops; k++) applyW(v, graph.edges, inc, g);
+  const buf = {
+    q: new Float32Array(v.length * TD),
+    k: new Float32Array(v.length * TD),
+    vp: new Float32Array(v.length * TD),
+    score: new Float32Array(v.length),
+  };
+  for (let k = 0; k < loops; k++) {
+    applyW(v, graph.edges, inc, g);
+    applyT(v, graph.nodes, buf);
+  }
   return v;
+}
+
+export function applyT(v, nodes, buf) {
+  const n = v.length;
+  const w = tWeights();
+  const d = w.d;
+  const q = buf.q;
+  const k = buf.k;
+  const vp = buf.vp;
+  const score = buf.score;
+  const inv = 1 / Math.sqrt(d);
+  for (let i = 0; i < n; i++) {
+    const a = v[i];
+    const px = nodes[i].x;
+    const py = nodes[i].y;
+    const off = i * d;
+    for (let t = 0; t < d; t++) {
+      q[off + t] = a * w.Wq[t] + px * w.Px[t] + py * w.Py[t];
+      k[off + t] = a * w.Wk[t] + px * w.Px[t] + py * w.Py[t];
+      vp[off + t] = a * w.Wv[t];
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    const io = i * d;
+    let maxs = -1e9;
+    for (let j = 0; j < n; j++) {
+      let dot = 0;
+      const jo = j * d;
+      for (let t = 0; t < d; t++) dot += q[io + t] * k[jo + t];
+      const s = dot * inv;
+      score[j] = s;
+      if (s > maxs) maxs = s;
+    }
+    let sum = 0;
+    for (let j = 0; j < n; j++) {
+      const e = Math.exp(score[j] - maxs);
+      score[j] = e;
+      sum += e;
+    }
+    const invs = sum > 1e-12 ? 1 / sum : 0;
+    const hid = w.hid;
+    for (let u = 0; u < T_FF; u++) hid[u] = 0;
+    for (let t = 0; t < d; t++) {
+      let o = 0;
+      for (let j = 0; j < n; j++) o += score[j] * invs * vp[j * d + t];
+      for (let u = 0; u < T_FF; u++) hid[u] += o * w.W1[t * T_FF + u];
+    }
+    let y = 0;
+    for (let u = 0; u < T_FF; u++) {
+      const h = hid[u] < 0 ? 0 : hid[u];
+      y += h * w.W2[u];
+    }
+    let next = v[i] * (1 - T_MIX) + T_MIX * tanh(y);
+    if (next > 1) next = 1;
+    if (next < -1) next = -1;
+    v[i] = next;
+  }
 }
 
 export function step(world) {
@@ -183,7 +261,10 @@ export function step(world) {
       couple(world);
       tissue(world);
     }
-    for (let i = 0; i < N; i++) applyW(vs[i], graph.edges, _inc, world.gainEff);
+    for (let i = 0; i < N; i++) {
+      applyW(vs[i], graph.edges, _inc, world.gainEff);
+      if (world.pair !== false) applyT(vs[i], graph.nodes, world._tbuf);
+    }
   }
 
   let sum = 0;
@@ -233,6 +314,7 @@ export function metrics(world) {
     delta7: te.delta7,
     el: te.el,
     circuit: hottestCircuit(te),
+    pair: world.pair !== false,
     gesture: world.gesture || null,
     target: world.target || 0,
     error: world.error || 0,
@@ -248,7 +330,9 @@ export function metrics(world) {
     tissue_g: split.tissue_g,
     human_g: HUMAN_G,
     target_copies: TARGET_COPIES,
+    motif_full: MOTIF_FULL,
     fraction: massFraction(world.N),
+    motif_frac: motifFraction(world.N),
   };
 }
 
@@ -305,6 +389,35 @@ function meanAbsAt(v, indices) {
   for (let k = 0; k < n; k++) sum += Math.abs(v[indices[k]]);
   const mean = sum / n;
   return Number.isFinite(mean) ? mean : 0;
+}
+
+function tWeights() {
+  if (Tw) return Tw;
+  const Wq = new Float32Array(TD);
+  const Wk = new Float32Array(TD);
+  const Wv = new Float32Array(TD);
+  const Px = new Float32Array(TD);
+  const Py = new Float32Array(TD);
+  const W1 = new Float32Array(TD * T_FF);
+  const W2 = new Float32Array(T_FF);
+  const hid = new Float32Array(T_FF);
+  for (let t = 0; t < TD; t++) {
+    Wq[t] = hash11(1, t) * 0.35;
+    Wk[t] = hash11(2, t) * 0.35;
+    Wv[t] = hash11(3, t) * 0.35;
+    Px[t] = hash11(4, t) * 0.12;
+    Py[t] = hash11(5, t) * 0.12;
+    for (let u = 0; u < T_FF; u++) W1[t * T_FF + u] = hash11(6 + t, u) * 0.22;
+  }
+  for (let u = 0; u < T_FF; u++) W2[u] = hash11(40, u) * 0.22;
+  Tw = { Wq, Wk, Wv, Px, Py, W1, W2, hid, d: TD };
+  return Tw;
+}
+
+function hash11(a, b) {
+  let x = Math.imul(a + 1, 374761393) + Math.imul(b + 1, 668265263);
+  x = Math.imul(x ^ (x >>> 13), 1274126177);
+  return ((x >>> 0) / 4294967296) * 2 - 1;
 }
 
 function hottestCircuit(te) {
@@ -397,7 +510,7 @@ function interfere(world) {
   return Number.isFinite(v) ? v : 0;
 }
 
-function applyW(v, edges, inc, gain) {
+export function applyW(v, edges, inc, gain) {
   const n = v.length;
   const g = Number.isFinite(gain) ? gain : GAIN;
   for (let i = 0; i < n; i++) inc[i] = 0;

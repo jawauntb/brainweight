@@ -5,7 +5,7 @@
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { create, setN, step, metrics, injectHeading, kick, wander, setTarget } from "./public/loop.js";
+import { create, setN, step, metrics, injectHeading, kick, wander, setTarget, applyW, applyT } from "./public/loop.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const graphPath = join(__dirname, "public", "data", "fly-cx.json");
@@ -193,6 +193,58 @@ function assayGlia(graph) {
   );
 }
 
+function assayPair(graph) {
+  const world = create(graph, { N: 3, K: 4 });
+  const m0 = metrics(world);
+  if (m0.pair !== true) fail("metrics().pair is not true");
+
+  const n = graph.nodes.length;
+  const a = new Float32Array(n);
+  const b = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const seed = ((i * 17) % 11) / 11;
+    a[i] = seed;
+    b[i] = seed;
+  }
+  const inc = new Float32Array(n);
+  const buf = {
+    q: new Float32Array(n * 8),
+    k: new Float32Array(n * 8),
+    vp: new Float32Array(n * 8),
+    score: new Float32Array(n),
+  };
+  applyW(a, graph.edges, inc, 0.072);
+  applyW(b, graph.edges, inc, 0.072);
+  applyT(b, graph.nodes, buf);
+  let diff = 0;
+  for (let i = 0; i < n; i++) diff += Math.abs(a[i] - b[i]);
+  if (diff < 1e-4) fail(`W and W+T agree (L1 ${diff}); the pair is decoration`);
+
+  const on = create(graph, { N: 1, K: 4 });
+  for (let i = 0; i < 8; i++) step(on);
+  const mOn = metrics(on);
+  if (mOn.residual < 1e-6) fail(`paired residual ${mOn.residual} is a lock, not a step`);
+
+  const seedV = new Float32Array(n);
+  for (let i = 0; i < n; i++) seedV[i] = ((i * 13) % 7 - 3) * 0.08;
+  const wOnly = create(graph, { N: 1, K: 1 });
+  const wPair = create(graph, { N: 1, K: 1 });
+  wOnly.pair = false;
+  wPair.pair = true;
+  wOnly.vs[0].set(seedV);
+  wPair.vs[0].set(seedV);
+  step(wOnly);
+  step(wPair);
+  let stepDiff = 0;
+  for (let i = 0; i < n; i++) stepDiff += Math.abs(wOnly.vs[0][i] - wPair.vs[0][i]);
+  if (stepDiff < 1e-4) fail(`paired step matches W-only (L1 ${stepDiff})`);
+
+  process.stdout.write(
+    `pair: L1(W,W+T)=${diff.toFixed(4)} residual=${mOn.residual.toFixed(4)} ` +
+      `stepL1=${stepDiff.toFixed(4)}\n`
+  );
+}
+
 const graph = loadGraph();
 assayMetrics(graph);
 assayEquivariance(graph);
@@ -201,5 +253,6 @@ assayKick(graph);
 assayWander(graph);
 assaySeek(graph);
 assayGlia(graph);
+assayPair(graph);
 
 process.stdout.write("PASS\n");

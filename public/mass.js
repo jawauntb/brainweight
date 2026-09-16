@@ -2,16 +2,16 @@
 // Fly wet mass is estimated from Zheng volume, not a weighing.
 
 export const HUMAN_G = 1508;
-export const TARGET_COPIES = 18850000;
-export const FLY_WET_G = HUMAN_G / TARGET_COPIES;
+export const MOTIF_FULL = 18850000;
+export const TARGET_COPIES = 9425000;
+export const FLY_WET_G = HUMAN_G / MOTIF_FULL;
 // Cell-count split, not a weighing. Raji and Potter: fly neurons are 91.8% of brain cells.
 export const FLY_NEURON_CELL = 0.918;
 
 export function wetGrams(copies) {
   const n = Number(copies);
   if (!Number.isFinite(n) || n < 0) return 0;
-  if (n === TARGET_COPIES) return HUMAN_G;
-  return HUMAN_G * (n / TARGET_COPIES);
+  return HUMAN_G * (n / MOTIF_FULL);
 }
 
 export function massFraction(copies) {
@@ -19,6 +19,12 @@ export function massFraction(copies) {
   if (!Number.isFinite(n) || n < 0) return 0;
   if (n === TARGET_COPIES) return 1;
   return n / TARGET_COPIES;
+}
+
+export function motifFraction(copies) {
+  const n = Number(copies);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return n / MOTIF_FULL;
 }
 
 export function splitGrams(copies) {
