@@ -53,7 +53,7 @@ Later PRs. This is the queue. Do not start a later tier in this repo until the e
 
 **Tier 0: landed.** `README.md` + `instruction.md`.
 
-**Tier 1: landed.** Beautiful local demo. Express + `public/*.js`, no build. Load compiled `fly-cx.json` (47 / 280, CC-BY Janelia `male-cns:v1.0`). Sliders for K and N. Perspective stack of the heading ring. Nacre on activity. Order, corr, residual. Verse. H hides chrome. Click the ring to set a target. The stack seeks it. Score is `(1 + cos(error)) / 2`. J kicks so stacks desync and must reacquire. A walking target is the idle verb. Telemetry names the live circuit (EPG / PEN / PEG / Delta7 / EL). A thought log is an autopsy of regime, score, and error, not language as the mind.
+**Tier 1: landed.** Beautiful local demo. Express + `public/*.js`, no build. Load compiled `fly-cx.json` (47 / 280, CC-BY Janelia `male-cns:v1.0`). Sliders for K and N. Perspective stack of the heading ring. Nacre on activity. Order, corr, residual. Verse. H hides chrome. Click the ring to set a target. The stack seeks it. Score is `(1 + cos(error)) / 2`. J kicks so stacks desync and must reacquire. A walking target is the idle verb. Telemetry names the live circuit (EPG / PEN / PEG / Delta7 / EL). A thought log is an autopsy of regime, score, and error, not language as the mind. A first gesture arms a compass tone (heading is pitch, score is the interval, residual is roughness). M mutes. Six field notes advance only when the visitor steers, kicks, and sees a real residual. The dock does not eat the ring.
 
 **Tier 2: landed.** Modal app `brainweight-mind`, one L4, scale to zero. 754 / 7200 `modal_mind/fly-deep.json`. Same `/think` proxy as lattice-animal `server.js`. Do not call GPU on first 8s or before first gesture. No websocket.
 

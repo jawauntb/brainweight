@@ -68,6 +68,12 @@ body {
   touch-action: auto;
 }
 
+.dock .verse,
+.dock .thoughts,
+.dock .field {
+  pointer-events: none;
+}
+
 .masthead {
   top: var(--safe-top);
   left: var(--safe-left);
@@ -140,7 +146,52 @@ body {
 .action-btn .icon-play { display: none; }
 .action-btn.is-paused .icon-pause { display: none; }
 .action-btn.is-paused .icon-play { display: inline-block; }
+.action-btn .icon-mute { display: none; }
+.action-btn.is-muted .icon-hear { display: none; }
+.action-btn.is-muted .icon-mute { display: inline-block; }
 .action-btn.is-on { color: var(--bound); border-color: var(--bound); }
+
+.hint {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  margin: 0;
+  pointer-events: none;
+  color: var(--cream);
+  font-style: italic;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  font-variation-settings: "opsz" 36;
+  text-shadow: 0 1px 12px rgba(0,0,0,0.65);
+  text-align: center;
+}
+
+.field {
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  color: var(--bound);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  font-variation-settings: "opsz" 28;
+  line-height: 1.4;
+  text-shadow: 0 1px 10px rgba(0,0,0,0.55);
+}
+
+.field-step {
+  flex: none;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+
+.field-text {
+  min-width: 0;
+}
 
 .dock {
   left: var(--safe-left);
@@ -321,6 +372,7 @@ input[type="range"]::-moz-range-thumb {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
+      "field field"
       "verse verse"
       "thoughts thoughts"
       "dials tel";
@@ -328,6 +380,7 @@ input[type="range"]::-moz-range-thumb {
     gap: 14px 18px;
     padding: 0 28px calc(22px + var(--safe-bot));
   }
+  .field { grid-area: field; }
   .thoughts {
     grid-area: thoughts;
     text-align: left;

@@ -24,6 +24,16 @@
       <p class="epigraph">9.4e6 units: motif plus a tiny transformer, stacked and looped. the rings are a window.</p>
     </div>
     <div class="actions" role="group" aria-label="Stage controls">
+      <button class="action-btn" id="btn-mute" aria-pressed="false" aria-label="Mute the compass" title="Mute (M)">
+        <svg class="icon-hear" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+          <path d="M16.5 8.5a5 5 0 010 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <svg class="icon-mute" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+          <path d="M17 9l5 6M22 9l-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
       <button class="action-btn" id="btn-kick" aria-label="Kick the stacks" title="Kick the stacks (J)">
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
           <path d="M12 3l1.6 6.2L20 12l-6.4 2.8L12 21l-1.6-6.2L4 12l6.4-2.8z" fill="currentColor"/>
@@ -46,7 +56,13 @@
     </div>
   </header>
 
+  <p class="hint" id="hint">drag the ring · J kicks · M mutes</p>
+
   <aside class="chrome dock" id="dock">
+    <p class="field" id="field" aria-live="polite">
+      <span class="field-step" id="field-step">1/6</span>
+      <span class="field-text" id="field-text">Drag the ring. This is a fly heading circuit. You are pointing.</span>
+    </p>
     <p class="verse" id="verse" aria-live="polite">Waiting on the motif.</p>
     <ol class="thoughts" id="thoughts" aria-label="Thought log"></ol>
 

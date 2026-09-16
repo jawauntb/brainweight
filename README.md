@@ -43,12 +43,12 @@ http://localhost:3000
 
 Live: [brainweight-production.up.railway.app](https://brainweight-production.up.railway.app)
 
-The live stack is 9,425,000 units on one L4. One unit is the 47-cell motif W plus a shared tiny transformer T (8-d, one head, frozen). That is the spec. Pairing cuts motif copies by half. The rings are a window (at most 8). After a gesture and 8s, `/think/mass` keeps that 9.4e6 stack live and steps W then T. N in telemetry is 9.4e6. Motif wet mass at that count is 754 g / 80 μg, estimated from Zheng volume, not a weighing. The motif is not a whole fly. Stacking it does not grow human tissue.
+The live stack is 9,425,000 units on one L4. One unit is the 47-cell motif W plus a shared tiny transformer T (8-d, one head, frozen). That is the spec. Pairing cuts motif copies by half. The rings are a window (at most 8). Drag the ring to point. J kicks. M mutes. A first gesture arms a compass tone and a six-beat field note: what the circuit is, why copies are not minds, what W+T and residual actually measure. After a gesture and 8s, `/think/mass` keeps that 9.4e6 stack live and steps W then T. N in telemetry is 9.4e6. Motif wet mass at that count is 754 g / 80 μg, estimated from Zheng volume, not a weighing. The motif is not a whole fly. Stacking it does not grow human tissue.
 
 Deep clock: Modal L4 on `modal_mind/fly-deep.json` (754 / 7200), proxied at `/think`. Scale to zero. No GPU on first paint, in the first 8s, or before a gesture. No websocket.
 
 Borrow, not a copy of the lattice-animal app: Express, no build, `public/*.js`, Fraunces + JetBrains Mono, tissue palette (`--mind --bound --committed --animal --cream --ink`), `Cache-Control: no-store` on HTML, `railway.json` + `/healthz`. No emojis unless asked. No `console.log` in prod.
 
-Assay: `npm run assay` runs the mass/pair check, the circuit/seek/glia check, and the mini-GPT twins (unique layers vs looped W+T on the same tiny corpus).
+Assay: `npm run assay` runs the mass/pair check, the circuit/seek/glia check, the play/learn check, and the mini-GPT twins (unique layers vs looped W+T on the same tiny corpus).
 
 The next agent executes [`instruction.md`](instruction.md) and [`AGENTS.md`](AGENTS.md). What is still parked lives in [`pending.md`](pending.md).
