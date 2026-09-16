@@ -28,4 +28,27 @@ A table. Params, FLOPs per token, loss. For the looped twin, K and the regime na
 
 ### When to start
 
-When Jawaun says to build the mini GPT. Until then, watch the weight run. `AGENTS.md` still applies: commit and PR as soon as a check passes.
+When Jawaun says to build the mini GPT. Until then, watch the weight run. `AGENTS.md` still applies: commit, PR, and merge as soon as a check passes.
+
+## Glia as a computational substrate
+
+`TISSUE` now is not glia. It is a discrete Laplacian: each stack is pulled toward its neighbors. That is a syncytium, extracellular diffusion. Useful. Incomplete.
+
+Glia are a second cell class. Fly: ~8.2% of brain cells (Raji and Potter 2021). Human: about half. They do not run W. They change whether W is allowed to run.
+
+Proxy them as one slow field `g`, not as extra motif copies.
+
+1. **Slow.** Update `g` once per tick, not K times. Neurons loop. Glia do not.
+2. **Own graph.** `g` couples only to neighbor `g`. No edges from `fly-cx.json`. Gap-junction astrocyte net.
+3. **Gate, do not store.** `GAIN_eff = GAIN * (1 + α * g)` or `W_eff = W * σ(g)`. The motif stays the store. Glia scale it. That is the tripartite-synapse proxy.
+4. **Homeostasis.** If mean `|v|` is high, `g` rises and `DECAY` or `MEAN_PULL` rises. That is K+ / glutamate uptake: keep the soup livable.
+
+Miller, Brincat, and Roy 2026 still holds: W stores, the slow field is control. Measure `intf` on `v` after `g` has gated it. A human-weight run can raise the `g` fraction toward 0.5 without adding neurons. Label that an estimate from cell counts, not a weighing.
+
+### Check that would settle it
+
+N=3, K=4. With `g`, effective gain moves when activity is high. Without `g`, it does not. At 1.9e7 copies, a fly-fraction run (`g` ~ 0.08) and a human-fraction run (`g` ~ 0.5) return different `intf` / `wave` / `reg`. If they do not, the proxy is decoration.
+
+### When to start
+
+When Jawaun says to build the glia field. Do not replace `TISSUE` until that check is written.
