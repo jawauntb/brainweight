@@ -51,4 +51,4 @@ Deep clock: Modal L4 on `modal_mind/fly-deep.json` (754 / 7200), proxied at `/th
 
 Borrow, not a copy of the lattice-animal app: Express, no build, `public/*.js`, Fraunces + JetBrains Mono, tissue palette (`--mind --bound --committed --animal --cream --ink`), `Cache-Control: no-store` on HTML, `railway.json` + `/healthz`. No emojis unless asked. No `console.log` in prod.
 
-The next agent executes [`instruction.md`](instruction.md) and [`AGENTS.md`](AGENTS.md).
+The next agent executes [`instruction.md`](instruction.md) and [`AGENTS.md`](AGENTS.md). Future work, including a mini GPT compared to a unique-layer twin, lives in [`pending.md`](pending.md).

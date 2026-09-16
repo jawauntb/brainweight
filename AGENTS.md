@@ -1,6 +1,6 @@
 # AGENTS.md
 
-How to work in this repo. Read `instruction.md` first. Then this file.
+How to work in this repo. Read `instruction.md` first. Then this file. Future work lives in `pending.md`. Do not start it until asked.
 
 ## Spec
 
@@ -12,7 +12,7 @@ Commit and open a PR as soon as a check passes. Do not sit on an uncommitted pil
 
 Push the branch. Use `gh pr create` if no PR exists. Update the existing PR if it does.
 
-Merge only when the user says ship or merge. This cut: they said merge to main.
+Auto-merge. After the check passes, squash-merge with `gh pr merge --squash`. If checks are still running, `gh pr merge --auto --squash`. Do not wait for the user to say merge.
 
 Do not force-push. Do not skip hooks. Do not commit secrets, `.env`, or `THINK_TOKEN`.
 
@@ -22,7 +22,7 @@ Do not force-push. Do not skip hooks. Do not commit secrets, `.env`, or `THINK_T
 2. Name the approach. If the context is two chats or two authors, say you do not know which approach this is.
 3. Edit toward this check. Do not replay last week's patch.
 4. Run the check. If it fails, do not remember the change.
-5. Commit and PR when the check passes.
+5. Commit, PR, and merge when the check passes.
 
 ## Live
 
