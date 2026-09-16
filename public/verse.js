@@ -39,10 +39,40 @@ const BANK = {
     "Fission. Each ring keeps its own heading.",
     "Desync. Correlation has fallen.",
   ],
+  wave: [
+    "A traveling wave. The heading is walking.",
+    "The bump is moving around the ring.",
+    "Order holds while the compass turns.",
+  ],
+  analog: [
+    "Waves are adding. The tissue is computing.",
+    "Constructive interference. The connective field agrees.",
+    "Same W. The analog sum is doing the work.",
+  ],
+  cancel: [
+    "Waves are canceling. The tissue is subtracting.",
+    "Destructive interference. Neighbor stacks undo each other.",
+    "The connective field is a difference, not a chorus.",
+  ],
+  second: [
+    "Second-order prediction. The error itself is stable.",
+    "The stack is predicting how it will miss.",
+    "Residual is changing less than the thought.",
+  ],
+  cancer: [
+    "One stack has isolated. Language cancer.",
+    "A copy stopped listening. The rest still agree.",
+    "Isolation. One ring is speaking only to itself.",
+  ],
   idle: [
     "The rings are still finding a heading.",
     "Activity without a compass yet.",
     "Waiting for a bump to lock.",
+  ],
+  weight: [
+    "The stack now weighs a human brain.",
+    "1.9e7 copies, neurons plus connective tissue.",
+    "Same wet mass. Still a fly motif.",
   ],
 };
 
@@ -54,22 +84,16 @@ function num(v, fallback) {
 }
 
 function regime(m) {
+  if (m && Number(m.fraction) >= 0.99) {
+    if (m.regime && m.regime !== "idle" && m.regime !== "weight") return m.regime;
+    return "weight";
+  }
+  if (m && m.regime) return m.regime;
   const N = num(m && m.N, 1);
   const K = num(m && m.K, 1);
   if (N === 1 && K === 1) return "both";
   if (N === 1) return "noN";
   if (K === 1) return "noK";
-
-  const order = num(m && m.order, 0);
-  const corr = num(m && m.corr, 0);
-  const residual = num(m && m.residual, 0);
-
-  if (residual > 0.24) return "lie";
-  if (corr < 0.38) return "fission";
-  if (order > 0.30 && residual < 0.09) return "reaffer";
-  if (order > 0.30) return "heading";
-  if (corr > 0.75) return "agree";
-  if (residual < 0.08 && order > 0.18) return "reaffer";
   return "idle";
 }
 

@@ -1,8 +1,12 @@
 // Looped / stacked fly-connectome engine.
 // One compiled motif W. N copies, vertically coupled. Each tick applies W, K times.
 // Graph loaded at runtime from /data/fly-cx.json (Janelia male-cns:v1.0, CC-BY).
+// Visual N is a window. Human wet-mass equivalent is TARGET_COPIES in mass.js.
+
+import { HUMAN_G, TARGET_COPIES, wetGrams, massFraction, splitGrams } from "./mass.js";
 
 const COUPLE = 0.12;
+const TISSUE = 0.05;
 const DECAY = 0.80;
 const GAIN = 0.072;
 const MEAN_PULL = 0.40;
@@ -29,6 +33,12 @@ export function create(graph, { N = 3, K = 4 } = {}) {
     seeds: [],
     vs: [],
     residual: 0,
+    prevResidual: 0,
+    second: 0,
+    wave: 0,
+    isolate: 0,
+    intf: 0,
+    lastHeading: 0,
     _pred: null,
     _inc: null,
     _scratch: null,
@@ -64,7 +74,10 @@ export function step(world) {
   _pred.set(vs[N - 1]);
 
   for (let k = 0; k < K; k++) {
-    if (N > 1) couple(world);
+    if (N > 1) {
+      couple(world);
+      tissue(world);
+    }
     for (let i = 0; i < N; i++) applyW(vs[i], graph.edges, _inc);
   }
 
@@ -75,20 +88,46 @@ export function step(world) {
     sum += d * d;
   }
   const residual = Math.sqrt(sum / n);
-  world.residual = Number.isFinite(residual) ? residual : 0;
+  const safeRes = Number.isFinite(residual) ? residual : 0;
+  const prev = world.residual || 0;
+  world.second = Math.abs(safeRes - prev);
+  world.prevResidual = prev;
+  world.residual = safeRes;
 }
 
 export function metrics(world) {
   const { order, heading } = epgOrder(world);
+  let dH = heading - (world.lastHeading || 0);
+  if (dH > Math.PI) dH -= Math.PI * 2;
+  if (dH < -Math.PI) dH += Math.PI * 2;
+  world.wave = Math.abs(dH);
+  world.lastHeading = heading;
+  const isolate = isolation(world);
+  world.isolate = isolate;
+  const corr = meanPairCorr(world);
+  const intf = interfere(world);
+  world.intf = intf;
+  const split = splitGrams(world.N);
   return {
     order,
-    corr: meanPairCorr(world),
+    corr,
     residual: world.residual,
+    second: world.second || 0,
+    wave: world.wave || 0,
+    isolate,
+    intf,
     heading,
+    regime: classify(world, order, corr, isolate, intf),
     n: world.graph.nodes.length,
     e: world.graph.edges.length,
     N: world.N,
     K: world.K,
+    mass_g: wetGrams(world.N),
+    neuron_g: split.neuron_g,
+    tissue_g: split.tissue_g,
+    human_g: HUMAN_G,
+    target_copies: TARGET_COPIES,
+    fraction: massFraction(world.N),
   };
 }
 
@@ -150,6 +189,40 @@ function couple(world) {
   const top = (N - 1) * n;
   const bottom = vs[0];
   for (let j = 0; j < n; j++) bottom[j] += COUPLE * _scratch[top + j];
+}
+
+// Connective analog substrate. Neighbors add and cancel. Not W.
+function tissue(world) {
+  const { vs, N, _scratch } = world;
+  const n = vs[0].length;
+  for (let i = 0; i < N; i++) _scratch.set(vs[i], i * n);
+  for (let i = 0; i < N; i++) {
+    const dst = vs[i];
+    const prev = ((i - 1 + N) % N) * n;
+    const next = ((i + 1) % N) * n;
+    const self = i * n;
+    for (let j = 0; j < n; j++) {
+      const field = 0.5 * (_scratch[prev + j] + _scratch[next + j]);
+      dst[j] += TISSUE * (field - _scratch[self + j]);
+    }
+  }
+}
+
+function interfere(world) {
+  const N = world.N;
+  if (N < 2) return 0;
+  const vs = world.vs;
+  const n = vs[0].length;
+  let sum = 0;
+  for (let i = 0; i < N; i++) {
+    const a = vs[i];
+    const b = vs[(i + 1) % N];
+    let acc = 0;
+    for (let j = 0; j < n; j++) acc += a[j] * b[j];
+    sum += acc / n;
+  }
+  const v = sum / N;
+  return Number.isFinite(v) ? v : 0;
 }
 
 function applyW(v, edges, inc) {
@@ -217,6 +290,42 @@ function meanPairCorr(world) {
     }
   }
   return pairs ? sum / pairs : 1;
+}
+
+function isolation(world) {
+  const N = world.N;
+  if (N < 3) return 0;
+  const vs = world.vs;
+  let worst = 1;
+  for (let i = 0; i < N; i++) {
+    let sum = 0;
+    for (let j = 0; j < N; j++) {
+      if (i === j) continue;
+      sum += pearson(vs[i], vs[j]);
+    }
+    const c = sum / (N - 1);
+    if (c < worst) worst = c;
+  }
+  return 1 - worst;
+}
+
+function classify(world, order, corr, isolate, intf) {
+  const N = world.N;
+  const K = world.K;
+  if (N === 1 && K === 1) return "both";
+  if (N === 1) return "noN";
+  if (K === 1) return "noK";
+  if (N >= 3 && isolate > 0.55 && corr > 0.45) return "cancer";
+  if (corr < 0.38) return "fission";
+  if (order > 0.22 && intf < -0.04) return "cancel";
+  if (order > 0.22 && (world.wave || 0) > 0.035 && intf > 0.04) return "analog";
+  if (order > 0.22 && (world.wave || 0) > 0.035) return "wave";
+  if ((world.residual || 0) > 0.10 && (world.second || 0) < 0.03) return "second";
+  if ((world.residual || 0) > 0.24) return "lie";
+  if (order > 0.30 && (world.residual || 0) < 0.09) return "reaffer";
+  if (order > 0.30) return "heading";
+  if (corr > 0.75) return "agree";
+  return "idle";
 }
 
 function pearson(a, b) {

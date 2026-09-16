@@ -1,5 +1,5 @@
-.DS_Store
 node_modules
+.git
 .playwright-cli
-__pycache__
-.modal
+modal_mind
+.DS_Store

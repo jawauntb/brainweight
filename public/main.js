@@ -1,5 +1,7 @@
 import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex } from "./loop.js";
 import { line } from "./verse.js";
+import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
+import { formatGrams, formatCopies, TARGET_COPIES } from "./mass.js";
 
 const NACRE_SIZE = 96;
 const PEARL = "246, 214, 122";
@@ -27,9 +29,14 @@ const tN = document.getElementById("t-n");
 const tR = document.getElementById("t-r");
 const tCorr = document.getElementById("t-corr");
 const tRes = document.getElementById("t-res");
+const tReg = document.getElementById("t-reg");
+const tIntf = document.getElementById("t-intf");
+const tGpu = document.getElementById("t-gpu");
+const tMass = document.getElementById("t-mass");
 
 let world = null;
 let paused = false;
+let frameNo = 0;
 let panelsOn = true;
 let vw = 0;
 let vh = 0;
@@ -133,6 +140,20 @@ function writeTelemetry(m) {
   tR.textContent = fmt(m.order, 2);
   tCorr.textContent = fmt(m.corr, 2);
   tRes.textContent = fmt(m.residual, 3);
+  if (tReg) tReg.textContent = m.regime || "idle";
+  if (tIntf) tIntf.textContent = fmt(m.intf, 2);
+  const remote = thinkStats();
+  const weighed = massStats();
+  if (tGpu) tGpu.textContent = remote.ok ? (remote.device || "L4") : (remote.reason || "local");
+  if (tMass) {
+    if (weighed && weighed.ok) {
+      tMass.textContent = `${formatCopies(weighed.N)}/${formatCopies(TARGET_COPIES)}`;
+      if (tReg && weighed.regime) tReg.textContent = weighed.regime;
+      if (tIntf && Number.isFinite(weighed.intf)) tIntf.textContent = fmt(weighed.intf, 2);
+    } else {
+      tMass.textContent = `${formatGrams(m.mass_g)}/${formatCopies(TARGET_COPIES)}`;
+    }
+  }
 }
 
 function applyK(raw) {
@@ -308,11 +329,26 @@ function draw() {
 }
 
 function frame() {
-  if (world && !paused) step(world);
+  if (world && !paused) {
+    step(world);
+    frameNo += 1;
+  }
   if (world) {
     const m = metrics(world);
+    const weighed = massStats();
+    const said = (weighed && weighed.ok && weighed.fraction >= 0.99)
+      ? {
+        ...m,
+        fraction: weighed.fraction,
+        regime: weighed.regime || m.regime,
+        intf: Number.isFinite(weighed.intf) ? weighed.intf : m.intf,
+        wave: Number.isFinite(weighed.wave) ? weighed.wave : m.wave,
+      }
+      : m;
     writeTelemetry(m);
-    verseEl.textContent = line(m);
+    verseEl.textContent = line(said);
+    requestThink(world, frameNo, m);
+    requestMass(m);
   }
   draw();
   requestAnimationFrame(frame);
@@ -335,6 +371,9 @@ function bindUi() {
       setPanels(!panelsOn);
     }
   });
+  const arm = () => armThink();
+  window.addEventListener("pointerdown", arm, { once: true });
+  window.addEventListener("keydown", arm, { once: true });
   window.addEventListener("resize", resize);
 }
 
