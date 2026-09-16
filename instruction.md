@@ -65,7 +65,7 @@ Later PRs. This is the queue. Do not start a later tier in this repo until the e
 
 **Ship.** Commit and PR as soon as a check passes. See `AGENTS.md`.
 
-**Pending.** Mini GPT, unique layers vs looped W. Compare loss and regimes. Do not start until asked. See [`pending.md`](pending.md).
+**Pending.** Mini GPT, unique layers vs looped W. Compare loss and regimes. Olah circuits: name EPG / PEN / PEG / Delta7 as features, then look for the same circuit in the GPT twin. Do not start until asked. See [`pending.md`](pending.md).
 
 Do not copy the lattice-animal app. Borrow principles. Load its compiled connectomes.
 

@@ -52,3 +52,29 @@ N=3, K=4. With `g`, effective gain moves when activity is high. Without `g`, it 
 ### When to start
 
 When Jawaun says to build the glia field. Do not replace `TISSUE` until that check is written.
+
+## Analogous circuits (Olah)
+
+Chris Olah, Cammarata, Schubert, Goh, Petrov, and Carter (2020, Distill, "Zoom In: An Introduction to Circuits", doi:10.23915/distill.00024.001) make three claims. Features are directions. Features plus weights are circuits. Analogous features and circuits form across models and tasks (universality). They also name recurring motifs: equivariant circuits (curve detectors rotate with orientation), unioning over cases (left and right pathways inhibit, then an invariant unit), and superposition (more features than neurons, packed almost-orthogonally). They say the universality evidence was still anecdotal. Keep that label.
+
+The fly motif is already a circuit, not a soup. The compile note in `fly-cx.json` names it: EPG compass, PEN shift, PEG feedback, Delta7 inhibition, EL. That is the same grain as a Distill curve detector. Do not wait for a GPT to start reading it that way.
+
+### What to do with it here
+
+1. **Name the subgraphs.** Telemetry per cell type, not only `order` / `corr`. An EPG bump is a feature. Delta7 is the inhibit-sharpen. PEN is a shift. If `reg` cannot say which subgraph did the work, the atlas is missing.
+
+2. **Equivariance assay.** Rotate the heading. Activity on the EPG ring should rotate. The weights already have that symmetry if the compass is real. This is Olah's curve-detector test, run on a fly ring. Hubel and Wiesel orientation tuning is the neuroscience version they already borrowed.
+
+3. **Superposition at weight.** 47 neurons cannot own 1.9e7 independent thoughts. If extra features appear, they are packed across stacks, not as new cells. A cheap dictionary (or even cluster of stack states) at N=1.9e7 is the car-on-dog-detector test. Polysemantic stacks are allowed. Do not call them a bigger fly.
+
+4. **Universality is the mini-GPT check.** Loss is not enough. The unique-layer twin and the looped-W twin should be scored on whether the same circuit shows up: a heading bump, an inhibit-sharpen, a shift. If the unique GPT grows an EPG-like direction and a Delta7-like oppose, that is claim 3. If only loss matches, that is compression, not an analogous structure.
+
+5. **Glia sit outside the circuit.** Olah's circuits live in W. `g` is a gate, not a feature in the motif. Do not dictionary-learn `g` as if it were an EPG. Measure `g` as control on whether the named circuit is allowed to fire.
+
+### Check that would settle it
+
+A short atlas: EPG / PEN / PEG / Delta7 / EL each have a one-line job and a metric. Rotating heading moves the EPG metric around the ring. A later mini-GPT table includes a column "analogous circuit found?" with yes/no per subgraph, not only loss. If the column is all no, say universality failed here. Do not upgrade the Distill anecdote into a proof.
+
+### When to start
+
+The atlas can start on the live motif without a GPT. The universality column waits for the mini-GPT cut. Do not build a Distill-style UI. Name the circuits in telemetry and verse first.
