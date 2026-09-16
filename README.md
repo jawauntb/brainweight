@@ -30,13 +30,19 @@ The lineage is old enough to cite. Universal Transformers tie weights across dep
 
 Emergence here means a dynamical regime that neither a single copy nor a single pass can produce. The one we are watching for is reafference: the stack predicting its own next state.
 
-## Later, not this PR
+## Run
 
-Two clocks, deferred:
+```
+npm install
+npm start
+```
 
-- Local: 47-neuron heading motif, every frame.
-- Modal L4: 754-neuron / 7200-synapse compile, scale to zero. Do not call GPU on first paint.
+http://localhost:3000
 
-When the demo exists it borrows lattice-animal principles, not the app: Express, no build, `public/*.js`, Fraunces + JetBrains Mono, tissue palette (`--mind --bound --committed --animal --cream --ink`), `Cache-Control: no-store` on HTML, `railway.json` + `/healthz`. No emojis unless asked. No `console.log` in prod.
+Local clock only: the 47-neuron heading motif, every frame. Sliders for K (depth) and N (stacks). H hides chrome. Space pauses.
 
-This PR is the docs. The demo is a later PR. The next agent executes [`instruction.md`](instruction.md).
+The Modal L4 clock (754 / 7200, scale to zero) is still later. Do not call GPU on first paint.
+
+Borrow, not a copy of the lattice-animal app: Express, no build, `public/*.js`, Fraunces + JetBrains Mono, tissue palette (`--mind --bound --committed --animal --cream --ink`), `Cache-Control: no-store` on HTML, `/healthz`. No emojis unless asked. No `console.log` in prod.
+
+The next agent executes [`instruction.md`](instruction.md).

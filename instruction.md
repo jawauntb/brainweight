@@ -51,9 +51,9 @@ Mechanic for us: one compiled fly motif W. N stacked copies, vertically coupled 
 
 Later PRs. This is the queue. Do not start a later tier in this repo until the earlier one exists.
 
-**Tier 0: this PR.** `README.md` + `instruction.md`. Safe-alone. Correct even if no later slice lands.
+**Tier 0: landed.** `README.md` + `instruction.md`.
 
-**Tier 1: beautiful local demo.** Express + `public/*.js`, no build. Load lattice-animal's compiled `fly-cx.json` (47 neurons / 280 synapses, CC-BY Janelia `male-cns:v1.0`). Sliders for K and N. Perspective stack of the heading ring. Nacre on activity, not decoration. Order parameter (EPG vector length), cross-stack correlation, reafference residual (does stack N predict stack 0 next frame). Verse that keeps up. H hides chrome. Mobile-first.
+**Tier 1: this PR.** Beautiful local demo. Express + `public/*.js`, no build. Load lattice-animal's compiled `fly-cx.json` (47 neurons / 280 synapses, CC-BY Janelia `male-cns:v1.0`). Sliders for K and N. Perspective stack of the heading ring. Nacre on activity, not decoration. Order parameter (EPG vector length), cross-stack correlation, reafference residual (does stack N predict stack 0 next frame). Verse that keeps up. H hides chrome. Mobile-first.
 
 **Tier 2: Modal, one L4, scale to zero.** 754 / 7200 `fly-deep.json` from `lattice-animal/modal_mind`. Same `/think` proxy pattern as lattice-animal `server.js`. Do not call GPU on first 8s or before first gesture. No websocket (kills scale-to-zero).
 
