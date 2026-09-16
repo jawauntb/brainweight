@@ -53,7 +53,7 @@ Later PRs. This is the queue. Do not start a later tier in this repo until the e
 
 **Tier 0: landed.** `README.md` + `instruction.md`.
 
-**Tier 1: landed.** Beautiful local demo. Express + `public/*.js`, no build. Load compiled `fly-cx.json` (47 / 280, CC-BY Janelia `male-cns:v1.0`). Sliders for K and N. Perspective stack of the heading ring. Nacre on activity. Order, corr, residual. Verse. H hides chrome.
+**Tier 1: landed.** Beautiful local demo. Express + `public/*.js`, no build. Load compiled `fly-cx.json` (47 / 280, CC-BY Janelia `male-cns:v1.0`). Sliders for K and N. Perspective stack of the heading ring. Nacre on activity. Order, corr, residual. Verse. H hides chrome. Click the ring to set a target. The stack seeks it. Score is `(1 + cos(error)) / 2`. J kicks so stacks desync and must reacquire. A walking target is the idle verb. Telemetry names the live circuit (EPG / PEN / PEG / Delta7 / EL). A thought log is an autopsy of regime, score, and error, not language as the mind.
 
 **Tier 2: landed.** Modal app `brainweight-mind`, one L4, scale to zero. 754 / 7200 `modal_mind/fly-deep.json`. Same `/think` proxy as lattice-animal `server.js`. Do not call GPU on first 8s or before first gesture. No websocket.
 
@@ -61,11 +61,13 @@ Later PRs. This is the queue. Do not start a later tier in this repo until the e
 
 **Tier 4: landed.** Regimes in `loop.js` classify and `verse.js` banks: traveling waves, second-order prediction, stack desync / fission, language-cancer isolation. Named in verse and `reg` telemetry.
 
-**Ceiling, this cut.** Same W, 18,850,000 copies of `fly-cx.json` (47 / 280) on the L4. That is 1508 g / 80 μg, the wet-mass equivalent, including connective tissue. Label the grams an estimate from Zheng volume. Cell-count split (91.8% neurons, Raji and Potter) is not a weighing. A connective field (`TISSUE`) lets neighboring stacks add and cancel. Watch `intf`, `wave`, `reg`. Miller, Brincat, and Roy 2026 (doi:10.1523/JNEUROSCI.0711-26.2026) is the lens: W stores, tissue computes. Do not call the motif a whole brain. Do not call a wave consciousness. The browser N slider stays a window (1-8). `/think/mass` is the weight run.
+**Ceiling, this cut.** Same W, 18,850,000 copies of `fly-cx.json` (47 / 280) on the L4. That is 1508 g / 80 μg, the wet-mass equivalent, including connective tissue. Label the grams an estimate from Zheng volume. Cell-count split (91.8% neurons, Raji and Potter) is not a weighing. A connective field (`TISSUE`) lets neighboring stacks add and cancel. A slow glia field `g` updates once per tick and gates `GAIN`. At weight, `g` uses a human cell-count fraction (~0.5), labeled an estimate. `/think/mass` seeks the same target the window is hunting. Watch `score`, `intf`, `wave`, `reg`. Miller, Brincat, and Roy 2026 (doi:10.1523/JNEUROSCI.0711-26.2026) is the lens: W stores, tissue computes, `g` is control. Do not call the motif a whole brain. Do not call a wave consciousness. The browser N slider stays a window (1-8).
+
+**Mini GPT, this cut.** `gpt/compare.mjs`: unique-layer twin vs looped fly W on one tiny corpus. Report params and next-token loss. Not a foundation model. Universality (does the GPT grow an EPG-like direction) is still a later column.
 
 **Ship.** Commit and PR as soon as a check passes. See `AGENTS.md`.
 
-**Pending.** Mini GPT, unique layers vs looped W. Compare loss and regimes. Olah circuits: name EPG / PEN / PEG / Delta7 as features, then look for the same circuit in the GPT twin. Do not start until asked. See [`pending.md`](pending.md).
+**Pending.** Universality column on the GPT twins. See [`pending.md`](pending.md).
 
 Do not copy the lattice-animal app. Borrow principles. Load its compiled connectomes.
 

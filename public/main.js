@@ -1,4 +1,4 @@
-import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex } from "./loop.js";
+import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander } from "./loop.js";
 import { line } from "./verse.js";
 import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
 import { formatGrams, formatCopies, TARGET_COPIES } from "./mass.js";
@@ -22,6 +22,7 @@ const sliderN = document.getElementById("slider-n");
 const outK = document.getElementById("out-k");
 const outN = document.getElementById("out-n");
 const btnPause = document.getElementById("btn-pause");
+const btnKick = document.getElementById("btn-kick");
 const btnPanels = document.getElementById("btn-panels");
 const chromeEls = document.querySelectorAll(".chrome");
 const tK = document.getElementById("t-k");
@@ -31,8 +32,14 @@ const tCorr = document.getElementById("t-corr");
 const tRes = document.getElementById("t-res");
 const tReg = document.getElementById("t-reg");
 const tIntf = document.getElementById("t-intf");
+const tCx = document.getElementById("t-cx");
+const tScore = document.getElementById("t-score");
+const tErr = document.getElementById("t-err");
+const tG = document.getElementById("t-g");
 const tGpu = document.getElementById("t-gpu");
 const tMass = document.getElementById("t-mass");
+const thoughtsEl = document.getElementById("thoughts");
+const thoughtLog = [];
 
 let world = null;
 let paused = false;
@@ -40,6 +47,8 @@ let frameNo = 0;
 let panelsOn = true;
 let vw = 0;
 let vh = 0;
+let steering = false;
+let aim = null;
 
 function bakeNacre(rgb) {
   const hit = nacreTiles.get(rgb);
@@ -140,19 +149,42 @@ function writeTelemetry(m) {
   tR.textContent = fmt(m.order, 2);
   tCorr.textContent = fmt(m.corr, 2);
   tRes.textContent = fmt(m.residual, 3);
-  if (tReg) tReg.textContent = m.regime || "idle";
+  if (tReg) tReg.textContent = m.gesture || m.regime || "idle";
   if (tIntf) tIntf.textContent = fmt(m.intf, 2);
+  if (tCx) tCx.textContent = m.circuit || "epg";
+  if (tScore) tScore.textContent = fmt(m.score, 2);
+  if (tErr) tErr.textContent = fmt(m.error, 2);
+  if (tG) tG.textContent = fmt(m.g, 2);
   const remote = thinkStats();
   const weighed = massStats();
   if (tGpu) tGpu.textContent = remote.ok ? (remote.device || "L4") : (remote.reason || "local");
   if (tMass) {
     if (weighed && weighed.ok) {
       tMass.textContent = `${formatCopies(weighed.N)}/${formatCopies(TARGET_COPIES)}`;
-      if (tReg && weighed.regime) tReg.textContent = weighed.regime;
+      if (tReg && weighed.regime && !m.gesture) tReg.textContent = weighed.regime;
       if (tIntf && Number.isFinite(weighed.intf)) tIntf.textContent = fmt(weighed.intf, 2);
+      if (tScore && Number.isFinite(weighed.score)) tScore.textContent = fmt(weighed.score, 2);
+      if (tErr && Number.isFinite(weighed.error)) tErr.textContent = fmt(weighed.error, 2);
     } else {
       tMass.textContent = `${formatGrams(m.mass_g)}/${formatCopies(TARGET_COPIES)}`;
     }
+  }
+}
+
+function writeThoughts(m) {
+  if (!thoughtsEl) return;
+  const score = Number.isFinite(m.score) ? m.score.toFixed(2) : "0.00";
+  const err = Number.isFinite(m.error) ? m.error.toFixed(2) : "0.00";
+  const line = `${m.regime || "idle"}  ${m.circuit || "epg"}  score ${score}  err ${err}`;
+  const last = thoughtLog[thoughtLog.length - 1];
+  if (last === line) return;
+  thoughtLog.push(line);
+  if (thoughtLog.length > 5) thoughtLog.shift();
+  thoughtsEl.replaceChildren();
+  for (let i = 0; i < thoughtLog.length; i++) {
+    const li = document.createElement("li");
+    li.textContent = thoughtLog[i];
+    thoughtsEl.appendChild(li);
   }
 }
 
@@ -250,7 +282,7 @@ function drawEpg(v, nodelist, epg, layer) {
     const mag = Math.abs(v[idx] || 0);
     const p = cellXY(ptA, layer, node);
     const r = (2.8 + mag * 5.2) * layer.scale;
-    const heat = mag < 0.58 ? 0 : Math.min(1, (mag - 0.58) / 0.28);
+    const heat = mag < 0.18 ? 0 : Math.min(1, (mag - 0.18) / 0.42);
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(127, 178, 255, ${(0.14 + mag * 0.38) * fade})`;
@@ -259,6 +291,66 @@ function drawEpg(v, nodelist, epg, layer) {
       fillNacreDot(p.x, p.y, r, PEARL, heat * (0.42 + mag * 0.48) * fade);
     }
   }
+}
+
+function drawHeadingGlow(layer, heading, order) {
+  const span = 0.55;
+  ctx.beginPath();
+  for (let t = heading - span; t <= heading + span; t += 0.05) {
+    const x = layer.cx + Math.cos(t) * layer.rx;
+    const y = layer.cy + Math.sin(t) * layer.ry;
+    if (t === heading - span) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = `rgba(246, 214, 122, ${0.16 + order * 0.42})`;
+  ctx.lineWidth = 3.4 * layer.scale;
+  ctx.lineCap = "round";
+  ctx.stroke();
+  const x = layer.cx + Math.cos(heading) * layer.rx;
+  const y = layer.cy + Math.sin(heading) * layer.ry;
+  fillNacreDot(x, y, (7.5 + order * 6) * layer.scale, PEARL, 0.28 + order * 0.46);
+}
+
+function drawTarget(layer, heading) {
+  const nx = Math.cos(heading);
+  const ny = Math.sin(heading);
+  const x0 = layer.cx + nx * layer.rx * 0.78;
+  const y0 = layer.cy + ny * layer.ry * 0.78;
+  const x1 = layer.cx + nx * layer.rx * 1.26;
+  const y1 = layer.cy + ny * layer.ry * 1.26;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.strokeStyle = "rgba(255, 209, 92, 0.92)";
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = "round";
+  ctx.setLineDash([3, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(x1, y1, 3.8 * layer.scale, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255, 209, 92, 0.95)";
+  ctx.fill();
+}
+
+function drawAim(layer, heading) {
+  const nx = Math.cos(heading);
+  const ny = Math.sin(heading);
+  const x0 = layer.cx + nx * layer.rx * 0.72;
+  const y0 = layer.cy + ny * layer.ry * 0.72;
+  const x1 = layer.cx + nx * layer.rx * 1.22;
+  const y1 = layer.cy + ny * layer.ry * 1.22;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.strokeStyle = "rgba(246, 214, 122, 0.92)";
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = "round";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x1, y1, 3.4 * layer.scale, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(246, 214, 122, 0.95)";
+  ctx.fill();
 }
 
 function drawTick(layer, heading) {
@@ -304,6 +396,12 @@ function drawFilaments(near, far, nearL, farL, epg, nodelist) {
 function draw() {
   ctx.clearRect(0, 0, vw, vh);
   if (!world) return;
+  if (world.flash > 0) {
+    ctx.fillStyle = `rgba(246, 214, 122, ${world.flash * 0.10})`;
+    ctx.fillRect(0, 0, vw, vh);
+    world.flash *= 0.84;
+    if (world.flash < 0.02) world.flash = 0;
+  }
   const layers = stacks(world);
   const nodelist = nodes(world);
   const epg = epgIndex(world);
@@ -321,15 +419,37 @@ function draw() {
     const layer = geom[i];
     const read = stackHeading(v, epg, nodelist);
     drawRingTrack(layer);
+    if (i === 0) drawHeadingGlow(layer, read.heading, read.order);
     drawInner(v, nodelist, epgSet, layer);
     drawEpg(v, nodelist, epg, layer);
     drawTick(layer, read.heading);
+    if (i === 0 && Number.isFinite(world.target)) drawTarget(layer, world.target);
+    if (i === 0 && aim != null) drawAim(layer, aim);
   }
   ctx.restore();
 }
 
+function headingFromPointer(ev) {
+  const layer = geomFor(world && world.N ? world.N : 1)[0];
+  return Math.atan2(ev.clientY - layer.cy, ev.clientX - layer.cx);
+}
+
+function steerTo(heading) {
+  if (!world) return;
+  aim = heading;
+  setTarget(world, heading);
+}
+
+function doKick() {
+  if (!world) return;
+  kick(world);
+  aim = null;
+  armThink();
+}
+
 function frame() {
   if (world && !paused) {
+    if (!steering) wander(world);
     step(world);
     frameNo += 1;
   }
@@ -347,8 +467,9 @@ function frame() {
       : m;
     writeTelemetry(m);
     verseEl.textContent = line(said);
+    writeThoughts(m);
     requestThink(world, frameNo, m);
-    requestMass(m);
+    requestMass(world, m);
   }
   draw();
   requestAnimationFrame(frame);
@@ -358,7 +479,31 @@ function bindUi() {
   sliderK.addEventListener("input", () => applyK(sliderK.value));
   sliderN.addEventListener("input", () => applyN(sliderN.value));
   btnPause.addEventListener("click", () => setPaused(!paused));
+  if (btnKick) btnKick.addEventListener("click", doKick);
   btnPanels.addEventListener("click", () => setPanels(!panelsOn));
+  stage.addEventListener("pointerdown", (ev) => {
+    if (!world || ev.button !== 0) return;
+    steering = true;
+    stage.classList.add("is-steering");
+    try { stage.setPointerCapture(ev.pointerId); } catch (_) { /* ignore */ }
+    steerTo(headingFromPointer(ev));
+    armThink();
+  });
+  stage.addEventListener("pointermove", (ev) => {
+    if (!steering || !world) return;
+    steerTo(headingFromPointer(ev));
+  });
+  const endSteer = (ev) => {
+    if (!steering) return;
+    steering = false;
+    stage.classList.remove("is-steering");
+    aim = null;
+    if (ev && ev.pointerId != null) {
+      try { stage.releasePointerCapture(ev.pointerId); } catch (_) { /* ignore */ }
+    }
+  };
+  stage.addEventListener("pointerup", endSteer);
+  stage.addEventListener("pointercancel", endSteer);
   window.addEventListener("keydown", (ev) => {
     if (ev.code === "Space") {
       ev.preventDefault();
@@ -369,6 +514,19 @@ function bindUi() {
     if (ev.key === "h" || ev.key === "H") {
       if (ev.repeat) return;
       setPanels(!panelsOn);
+      return;
+    }
+    if (ev.key === "j" || ev.key === "J") {
+      if (ev.repeat) return;
+      doKick();
+      return;
+    }
+    if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") {
+      ev.preventDefault();
+      if (!world) return;
+      const stepH = ev.key === "ArrowLeft" ? -0.38 : 0.38;
+      steerTo((world.target || 0) + stepH);
+      armThink();
     }
   });
   const arm = () => armThink();

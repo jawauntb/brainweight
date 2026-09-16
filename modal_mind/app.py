@@ -15,6 +15,8 @@ TARGET_COPIES = 18850000
 FLY_WET_G = HUMAN_G / TARGET_COPIES
 FLY_NEURON_CELL = 0.918
 TISSUE = 0.05
+GLIA_ALPHA = 1.15
+HUMAN_GLIA = 0.5
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
@@ -180,7 +182,8 @@ def _pearson_rows(a, b):
     return r.clamp(-1, 1)
 
 
-def _run_mass(N, K):
+def _run_mass(N, K, target=0.0, glia_frac=HUMAN_GLIA):
+    import math
     import torch
 
     _load_cx()
@@ -194,7 +197,18 @@ def _run_mass(N, K):
     epg = _cx["epg"]
     pick = (torch.arange(N, device=device) * 7 + 3) % templates.shape[0]
     v = templates.index_select(0, pick)
+    nodes = g["nodes"]
+    bx = math.cos(target)
+    by = math.sin(target)
+    cue = torch.tensor(
+        [math.exp(-3.2 * ((nd["x"] - bx) ** 2 + (nd["y"] - by) ** 2)) for nd in nodes],
+        dtype=torch.float32,
+        device=device,
+    )
+    v = (v * 0.38 + 0.42 * cue).clamp(-1, 1)
     pred = v[-1].clone()
+    g_field = 0.0
+    gain_scale = 1.0
     tile = 200000 if N > 200000 else N
     for _ in range(K):
         v = v + 0.12 * torch.roll(v, 1, 0)
@@ -204,7 +218,10 @@ def _run_mass(N, K):
         for start in range(0, N, tile):
             end = min(start + tile, N)
             sl = v[start:end]
-            act = torch.tanh(sl.index_select(1, src)) * w
+            mean_abs = float(sl.abs().mean().item())
+            g_field = max(0.0, min(1.0, mean_abs - 0.18))
+            gain_scale = 1.0 + GLIA_ALPHA * glia_frac * g_field
+            act = torch.tanh(sl.index_select(1, src)) * (w * gain_scale)
             dest = dst.unsqueeze(0).expand(end - start, -1)
             inc[start:end].scatter_add_(1, dest, act)
         v = v * 0.80 + inc
@@ -225,7 +242,6 @@ def _run_mass(N, K):
         b = v.index_select(0, idx + 1)
         corr = float(_pearson_rows(a, b).mean().item())
         intf = float((a * b).mean().item())
-        nodes = g["nodes"]
         epg_x = torch.tensor([nodes[i]["x"] for i in epg], device=device)
         epg_y = torch.tensor([nodes[i]["y"] for i in epg], device=device)
         epg_i = torch.tensor(epg, device=device, dtype=torch.long)
@@ -257,6 +273,23 @@ def _run_mass(N, K):
             regime = "agree"
         else:
             regime = "idle"
+    epg_i0 = torch.tensor(epg, device=device, dtype=torch.long)
+    epg_x0 = torch.tensor([nodes[i]["x"] for i in epg], device=device)
+    epg_y0 = torch.tensor([nodes[i]["y"] for i in epg], device=device)
+    h0 = v[0].index_select(0, epg_i0)
+    sx0 = float((h0 * epg_x0).sum().item())
+    sy0 = float((h0 * epg_y0).sum().item())
+    heading0 = math.atan2(sy0, sx0)
+    err = target - heading0
+    while err > math.pi:
+        err -= 2 * math.pi
+    while err < -math.pi:
+        err += 2 * math.pi
+    score = (1.0 + math.cos(err)) / 2.0
+    if score > 0.88:
+        regime = "acquire"
+    elif score < 0.22 and order > 0.16:
+        regime = "miss"
     mass_g = HUMAN_G if N == TARGET_COPIES else HUMAN_G * (N / TARGET_COPIES)
     neuron_g = mass_g * FLY_NEURON_CELL
     tissue_g = mass_g - neuron_g
@@ -284,6 +317,13 @@ def _run_mass(N, K):
         "wave": wave,
         "order": order,
         "regime": regime,
+        "heading": heading0,
+        "target": target,
+        "error": err,
+        "score": score,
+        "g": g_field,
+        "gain": 0.072 * gain_scale,
+        "glia_frac": glia_frac,
     }
 
 
@@ -304,11 +344,17 @@ def think(body: dict):
         N = max(1, min(N, TARGET_COPIES))
         K = int((body or {}).get("K") or 4)
         K = max(1, min(K, 16))
-        cache_key = (N, K)
+        target = float((body or {}).get("target") or 0.0)
+        glia_frac = float((body or {}).get("glia_frac") or HUMAN_GLIA)
+        if glia_frac < 0:
+            glia_frac = 0.0
+        if glia_frac > 1:
+            glia_frac = 1.0
+        cache_key = (N, K, round(target, 2), round(glia_frac, 2))
         if _mass_last and _mass_last.get("cache_key") == cache_key:
             return {k: v for k, v in _mass_last.items() if k != "cache_key"}
         t0 = time.time()
-        out = _run_mass(N, K)
+        out = _run_mass(N, K, target, glia_frac)
         out["ms"] = round((time.time() - t0) * 1000, 1)
         _mass_last = {**out, "cache_key": cache_key}
         return out

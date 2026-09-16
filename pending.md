@@ -28,7 +28,7 @@ A table. Params, FLOPs per token, loss. For the looped twin, K and the regime na
 
 ### When to start
 
-When Jawaun says to build the mini GPT. Until then, watch the weight run. `AGENTS.md` still applies: commit, PR, and merge as soon as a check passes.
+The loss table is this cut: `node gpt/compare.mjs`. Unique layers vs looped W, same corpus, params and next-token loss. The universality column (analogous circuit found?) is still waiting. Do not treat a lower loss as a heading bump.
 
 ## Glia as a computational substrate
 
@@ -51,7 +51,7 @@ N=3, K=4. With `g`, effective gain moves when activity is high. Without `g`, it 
 
 ### When to start
 
-When Jawaun says to build the glia field. Do not replace `TISSUE` until that check is written.
+The slow field `g` is this cut. It updates once per tick, couples to neighbor `g`, and gates `GAIN`. `TISSUE` stays the Laplacian. The 1.9e7 run uses a human cell-count fraction (~0.5) and labels it an estimate. If a later fly-fraction vs human-fraction mass pair does not move `intf` / `wave` / `reg`, say the proxy is decoration.
 
 ## Analogous circuits (Olah)
 
@@ -77,4 +77,4 @@ A short atlas: EPG / PEN / PEG / Delta7 / EL each have a one-line job and a metr
 
 ### When to start
 
-The atlas can start on the live motif without a GPT. The universality column waits for the mini-GPT cut. Do not build a Distill-style UI. Name the circuits in telemetry and verse first.
+The live atlas and the steer/kick/wander verb are this cut. Telemetry `cx` names the hot subgraph. Drag the ring to turn heading. J kicks the lock. The bump walks if you leave it. The universality column still waits for the mini-GPT cut. Do not build a Distill-style UI.

@@ -51,6 +51,8 @@ export function gatherThink(world, frame, m) {
     order: (m && m.order) || 0,
     corr: (m && m.corr) || 0,
     heading: (m && m.heading) || 0,
+    target: (m && m.target) || 0,
+    score: (m && m.score) || 0,
     minds,
   };
 }
@@ -107,7 +109,7 @@ export async function requestThink(world, frame, m) {
   }
 }
 
-export async function requestMass(m) {
+export async function requestMass(world, m) {
   const now = performance.now();
   if (!clock.born) clock.born = now;
   if (!clock.armed) return null;
@@ -122,6 +124,8 @@ export async function requestMass(m) {
         mode: "mass",
         N: TARGET_COPIES,
         K: (m && m.K) || 4,
+        target: (world && Number.isFinite(world.target)) ? world.target : ((m && m.target) || 0),
+        glia_frac: 0.5,
       }),
     });
     const data = await res.json();
@@ -143,6 +147,12 @@ export async function requestMass(m) {
         regime: data.regime || "weight",
         tissue_g: data.tissue_g || 0,
         neuron_g: data.neuron_g || 0,
+        heading: data.heading || 0,
+        target: data.target || 0,
+        error: data.error || 0,
+        score: data.score || 0,
+        gain: data.gain || 0,
+        g: data.g || 0,
         reason: "weight",
       };
     } else {
