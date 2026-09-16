@@ -2,6 +2,8 @@ import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTa
 import { line } from "./verse.js";
 import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
 import { formatGrams, formatCopies, TARGET_COPIES, HUMAN_G, wetGrams } from "./mass.js";
+import { createField, noteField, currentField } from "./field.js";
+import { armTone, hear, setMuted, isMuted, kickTone } from "./tone.js";
 
 const NACRE_SIZE = 96;
 const PEARL = "246, 214, 122";
@@ -23,7 +25,12 @@ const outK = document.getElementById("out-k");
 const outN = document.getElementById("out-n");
 const btnPause = document.getElementById("btn-pause");
 const btnKick = document.getElementById("btn-kick");
+const btnMute = document.getElementById("btn-mute");
 const btnPanels = document.getElementById("btn-panels");
+const hintEl = document.getElementById("hint");
+const fieldEl = document.getElementById("field");
+const fieldStep = document.getElementById("field-step");
+const fieldText = document.getElementById("field-text");
 const chromeEls = document.querySelectorAll(".chrome");
 const tK = document.getElementById("t-k");
 const tN = document.getElementById("t-n");
@@ -41,6 +48,7 @@ const tMass = document.getElementById("t-mass");
 const tPair = document.getElementById("t-pair");
 const thoughtsEl = document.getElementById("thoughts");
 const thoughtLog = [];
+const field = createField();
 
 let world = null;
 let paused = false;
@@ -126,6 +134,27 @@ function clampInt(v, lo, hi) {
 function fmt(v, digits) {
   if (!Number.isFinite(v)) return "0.00";
   return v.toFixed(digits);
+}
+
+function playArm() {
+  armThink();
+  armTone();
+  if (hintEl) hintEl.hidden = true;
+}
+
+function writeField(beat) {
+  const now = beat || currentField(field);
+  if (fieldStep) fieldStep.textContent = `${now.i + 1}/${now.n}`;
+  if (fieldText) fieldText.textContent = now.text;
+}
+
+function setMutedUi(on) {
+  const muted = setMuted(on);
+  if (!btnMute) return muted;
+  btnMute.classList.toggle("is-muted", muted);
+  btnMute.setAttribute("aria-pressed", muted ? "true" : "false");
+  btnMute.setAttribute("aria-label", muted ? "Unmute the compass" : "Mute the compass");
+  return muted;
 }
 
 function setPaused(next) {
@@ -449,13 +478,16 @@ function steerTo(heading) {
   if (!world) return;
   aim = heading;
   setTarget(world, heading);
+  writeField(noteField(field, "steer"));
 }
 
 function doKick() {
   if (!world) return;
   kick(world);
   aim = null;
-  armThink();
+  playArm();
+  kickTone();
+  writeField(noteField(field, "kick"));
 }
 
 function frame() {
@@ -479,6 +511,8 @@ function frame() {
     writeTelemetry(m);
     verseEl.textContent = line(said);
     writeThoughts(m);
+    writeField(noteField(field, "tick", m));
+    hear(m);
     requestThink(world, frameNo, m);
     requestMass(world, m);
   }
@@ -491,6 +525,10 @@ function bindUi() {
   sliderN.addEventListener("input", () => applyN(sliderN.value));
   btnPause.addEventListener("click", () => setPaused(!paused));
   if (btnKick) btnKick.addEventListener("click", doKick);
+  if (btnMute) btnMute.addEventListener("click", () => {
+    playArm();
+    setMutedUi(!isMuted());
+  });
   btnPanels.addEventListener("click", () => setPanels(!panelsOn));
   stage.addEventListener("pointerdown", (ev) => {
     if (!world || ev.button !== 0) return;
@@ -498,7 +536,7 @@ function bindUi() {
     stage.classList.add("is-steering");
     try { stage.setPointerCapture(ev.pointerId); } catch (_) { /* ignore */ }
     steerTo(headingFromPointer(ev));
-    armThink();
+    playArm();
   });
   stage.addEventListener("pointermove", (ev) => {
     if (!steering || !world) return;
@@ -527,6 +565,12 @@ function bindUi() {
       setPanels(!panelsOn);
       return;
     }
+    if (ev.key === "m" || ev.key === "M") {
+      if (ev.repeat) return;
+      playArm();
+      setMutedUi(!isMuted());
+      return;
+    }
     if (ev.key === "j" || ev.key === "J") {
       if (ev.repeat) return;
       doKick();
@@ -537,10 +581,10 @@ function bindUi() {
       if (!world) return;
       const stepH = ev.key === "ArrowLeft" ? -0.38 : 0.38;
       steerTo((world.target || 0) + stepH);
-      armThink();
+      playArm();
     }
   });
-  const arm = () => armThink();
+  const arm = () => playArm();
   window.addEventListener("pointerdown", arm, { once: true });
   window.addEventListener("keydown", arm, { once: true });
   window.addEventListener("resize", resize);
@@ -559,6 +603,7 @@ async function boot() {
     N: clampInt(sliderN.value, 1, 8),
     K: clampInt(sliderK.value, 1, 16),
   });
+  writeField();
   requestAnimationFrame(frame);
 }
 
