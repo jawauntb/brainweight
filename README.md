@@ -28,15 +28,27 @@ This is a looped transformer, not a deeper unique stack. One compiled fly motif 
 
 The lineage is old enough to cite. Universal Transformers tie weights across depth (Dehghani et al. 2018, arXiv 1807.03819). Giannou et al. 2023 (ICML; arXiv 2301.13196) freeze a shallow net and treat K loops as program length. In 2026 the same idea showed up as chatter around OpenAI Astra; Raschka (2026-09-02) notes that Nanbeige 4.2 actually shipped it: a 22-layer stack run twice, ~75% the token efficiency of a unique-layer twin, and more passes did not help.
 
-Emergence here means a dynamical regime that neither a single copy nor a single pass can produce. The one we are watching for is reafference: the stack predicting its own next state.
+Emergence here means a dynamical regime that neither a single copy nor a single pass can produce. Reafference is one: the stack predicting its own next state. Another is analog interference (Miller, Brincat, and Roy 2026, *Journal of Neuroscience*, doi:10.1523/JNEUROSCI.0711-26.2026): W stores the motif, a connective tissue field lets neighboring stacks add or cancel. Telemetry `intf` is that sum. Positive is constructive. Negative is cancel.
 
-## Later, not this PR
+The wet-mass target already includes connective tissue, glia, and neuropil. Zheng's volume is the whole organ, not neurons alone. The cell-count split is labeled: fly neurons are 91.8% of brain cells (Raji and Potter 2021). That is not a weighing. Human tissue is about half glia. The 1.9e7 run is same grams, including the non-neural share. It is still a fly motif.
 
-Two clocks, deferred:
+## Run
 
-- Local: 47-neuron heading motif, every frame.
-- Modal L4: 754-neuron / 7200-synapse compile, scale to zero. Do not call GPU on first paint.
+```
+npm install
+npm start
+```
 
-When the demo exists it borrows lattice-animal principles, not the app: Express, no build, `public/*.js`, Fraunces + JetBrains Mono, tissue palette (`--mind --bound --committed --animal --cream --ink`), `Cache-Control: no-store` on HTML, `railway.json` + `/healthz`. No emojis unless asked. No `console.log` in prod.
+http://localhost:3000
 
-This PR is the docs. The demo is a later PR. The next agent executes [`instruction.md`](instruction.md).
+Live: [brainweight-production.up.railway.app](https://brainweight-production.up.railway.app)
+
+Local clock: the 47-neuron heading motif, every frame. Sliders for K (depth) and N (stacks, a window of at most 8). H hides chrome. Space pauses. Telemetry names the regime: heading, reafference, wave, fission, second-order, isolation.
+
+The weight run is not the window. After a gesture and 8s, `/think/mass` stacks the same 47-cell motif 18,850,000 times on one L4 (1508 g / 80 μg). That count is the wet-mass equivalent of a human brain, including connective tissue. The 80 μg is estimated from Zheng volume, not a weighing. The motif is not a whole fly brain. Stacking it to the same grams does not grow human tissue. Watch `intf` and `reg` for what the tissue does at that weight.
+
+Deep clock: Modal L4 on `modal_mind/fly-deep.json` (754 / 7200), proxied at `/think`. Scale to zero. No GPU on first paint, in the first 8s, or before a gesture. No websocket.
+
+Borrow, not a copy of the lattice-animal app: Express, no build, `public/*.js`, Fraunces + JetBrains Mono, tissue palette (`--mind --bound --committed --animal --cream --ink`), `Cache-Control: no-store` on HTML, `railway.json` + `/healthz`. No emojis unless asked. No `console.log` in prod.
+
+The next agent executes [`instruction.md`](instruction.md) and [`AGENTS.md`](AGENTS.md).

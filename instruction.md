@@ -51,15 +51,19 @@ Mechanic for us: one compiled fly motif W. N stacked copies, vertically coupled 
 
 Later PRs. This is the queue. Do not start a later tier in this repo until the earlier one exists.
 
-**Tier 0: this PR.** `README.md` + `instruction.md`. Safe-alone. Correct even if no later slice lands.
+**Tier 0: landed.** `README.md` + `instruction.md`.
 
-**Tier 1: beautiful local demo.** Express + `public/*.js`, no build. Load lattice-animal's compiled `fly-cx.json` (47 neurons / 280 synapses, CC-BY Janelia `male-cns:v1.0`). Sliders for K and N. Perspective stack of the heading ring. Nacre on activity, not decoration. Order parameter (EPG vector length), cross-stack correlation, reafference residual (does stack N predict stack 0 next frame). Verse that keeps up. H hides chrome. Mobile-first.
+**Tier 1: landed.** Beautiful local demo. Express + `public/*.js`, no build. Load compiled `fly-cx.json` (47 / 280, CC-BY Janelia `male-cns:v1.0`). Sliders for K and N. Perspective stack of the heading ring. Nacre on activity. Order, corr, residual. Verse. H hides chrome.
 
-**Tier 2: Modal, one L4, scale to zero.** 754 / 7200 `fly-deep.json` from `lattice-animal/modal_mind`. Same `/think` proxy pattern as lattice-animal `server.js`. Do not call GPU on first 8s or before first gesture. No websocket (kills scale-to-zero).
+**Tier 2: landed.** Modal app `brainweight-mind`, one L4, scale to zero. 754 / 7200 `modal_mind/fly-deep.json`. Same `/think` proxy as lattice-animal `server.js`. Do not call GPU on first 8s or before first gesture. No websocket.
 
-**Tier 3: Railway deploy.** Same `railway.json` shape. Cut it up as its own project.
+**Tier 3: landed.** Railway project `brainweight`. Same `railway.json` shape. Live: https://brainweight-production.up.railway.app. `/healthz` → `ok`. Bind `::` and `PORT=3000`.
 
-**Tier 4: watch for regimes.** Traveling waves. Second-order prediction. Stack desync / fission. "Language cancer" isolation.
+**Tier 4: landed.** Regimes in `loop.js` classify and `verse.js` banks: traveling waves, second-order prediction, stack desync / fission, language-cancer isolation. Named in verse and `reg` telemetry.
+
+**Ceiling, this cut.** Same W, 18,850,000 copies of `fly-cx.json` (47 / 280) on the L4. That is 1508 g / 80 μg, the wet-mass equivalent, including connective tissue. Label the grams an estimate from Zheng volume. Cell-count split (91.8% neurons, Raji and Potter) is not a weighing. A connective field (`TISSUE`) lets neighboring stacks add and cancel. Watch `intf`, `wave`, `reg`. Miller, Brincat, and Roy 2026 (doi:10.1523/JNEUROSCI.0711-26.2026) is the lens: W stores, tissue computes. Do not call the motif a whole brain. Do not call a wave consciousness. The browser N slider stays a window (1-8). `/think/mass` is the weight run.
+
+**Ship.** Commit and PR as soon as a check passes. See `AGENTS.md`.
 
 Do not copy the lattice-animal app. Borrow principles. Load its compiled connectomes.
 
