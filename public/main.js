@@ -1,6 +1,7 @@
 import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander } from "./loop.js";
 import { line } from "./verse.js";
 import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
+import { armJev, requestJev, jevStats } from "./ask.js";
 import { formatGrams, formatCopies, TARGET_COPIES, HUMAN_G, wetGrams } from "./mass.js";
 import { createField, noteField, currentField } from "./field.js";
 import { armTone, hear, setMuted, isMuted, kickTone } from "./tone.js";
@@ -46,6 +47,7 @@ const tG = document.getElementById("t-g");
 const tGpu = document.getElementById("t-gpu");
 const tMass = document.getElementById("t-mass");
 const tPair = document.getElementById("t-pair");
+const tJev = document.getElementById("t-jev");
 const thoughtsEl = document.getElementById("thoughts");
 const thoughtLog = [];
 const field = createField();
@@ -139,7 +141,8 @@ function fmt(v, digits) {
 function playArm() {
   armThink();
   armTone();
-  if (hintEl) hintEl.hidden = true;
+  armJev();
+  if (hintEl) hintEl.dataset.mode = "jev";
 }
 
 function writeField(beat) {
@@ -192,6 +195,16 @@ function writeTelemetry(m) {
     else tGpu.textContent = remote.ok ? (remote.device || "L4") : (remote.reason || "local");
   }
   if (tPair) tPair.textContent = (weighed && weighed.ok && weighed.pair === false) ? "W" : "W+T";
+  const judged = jevStats();
+  if (tJev) {
+    tJev.textContent = judged.ok
+      ? `${judged.source || "jev"} ${judged.verb || ""}`
+      : (judged.reason || "idle");
+  }
+  if (hintEl && hintEl.dataset.mode === "jev" && judged.ok && judged.hint) {
+    hintEl.hidden = false;
+    hintEl.textContent = judged.hint;
+  }
   if (tMass) {
     if (weighed && weighed.ok) {
       tN.textContent = formatCopies(weighed.N || TARGET_COPIES);
@@ -513,6 +526,7 @@ function frame() {
     writeThoughts(m);
     writeField(noteField(field, "tick", m));
     hear(m);
+    requestJev(m, currentField(field));
     requestThink(world, frameNo, m);
     requestMass(world, m);
   }
