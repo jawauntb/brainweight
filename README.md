@@ -43,12 +43,14 @@ http://localhost:3000
 
 Live: [brainweight-production.up.railway.app](https://brainweight-production.up.railway.app)
 
-Local clock: the 47-neuron heading motif, every frame. Sliders for K (depth) and N (stacks, a window of at most 8). H hides chrome. Space pauses. Telemetry names the regime: heading, reafference, wave, fission, second-order, isolation.
+Local clock: the 47-neuron heading motif, every frame. Sliders for K (depth) and N (stacks, a window of at most 8). Click the ring to set a target heading. The stack has to turn and catch it. Score is `(1 + cos(error)) / 2`. J kicks the stacks so they lose the lock and must reacquire. If you leave it, the target walks and the bump hunts. H hides chrome. Space pauses. A thought log writes regime, circuit, score, and error. That is an autopsy, not a voice. Telemetry also names the live circuit (EPG, PEN, PEG, Delta7, EL) and the slow glia field `g`.
 
-The weight run is not the window. After a gesture and 8s, `/think/mass` stacks the same 47-cell motif 18,850,000 times on one L4 (1508 g / 80 μg). That count is the wet-mass equivalent of a human brain, including connective tissue. The 80 μg is estimated from Zheng volume, not a weighing. The motif is not a whole fly brain. Stacking it to the same grams does not grow human tissue. Watch `intf` and `reg` for what the tissue does at that weight.
+The weight run is not the window. After a gesture and 8s, `/think/mass` stacks the same 47-cell motif 18,850,000 times on one L4 (1508 g / 80 μg) and seeks the same target. That count is the wet-mass equivalent of a human brain, including connective tissue. The 80 μg is estimated from Zheng volume, not a weighing. At that weight `g` uses a human cell-count fraction (~0.5), labeled an estimate, not a weighing. The motif is not a whole fly brain. Stacking it to the same grams does not grow human tissue. Watch `score`, `intf`, and `reg` for what the tissue does at that weight.
 
 Deep clock: Modal L4 on `modal_mind/fly-deep.json` (754 / 7200), proxied at `/think`. Scale to zero. No GPU on first paint, in the first 8s, or before a gesture. No websocket.
 
 Borrow, not a copy of the lattice-animal app: Express, no build, `public/*.js`, Fraunces + JetBrains Mono, tissue palette (`--mind --bound --committed --animal --cream --ink`), `Cache-Control: no-store` on HTML, `railway.json` + `/healthz`. No emojis unless asked. No `console.log` in prod.
 
-The next agent executes [`instruction.md`](instruction.md) and [`AGENTS.md`](AGENTS.md). Future work, including a mini GPT compared to a unique-layer twin, lives in [`pending.md`](pending.md).
+Assay: `npm run assay` runs the circuit/seek/glia check and the mini-GPT twins (unique layers vs looped W on the same tiny corpus).
+
+The next agent executes [`instruction.md`](instruction.md) and [`AGENTS.md`](AGENTS.md). What is still parked lives in [`pending.md`](pending.md).

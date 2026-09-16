@@ -51,7 +51,10 @@ body {
   height: 100dvh;
   display: block;
   touch-action: none;
+  cursor: grab;
 }
+
+#stage.is-steering { cursor: grabbing; }
 
 .chrome {
   position: fixed;
@@ -149,6 +152,23 @@ body {
   gap: 12px;
   padding: 0 14px calc(14px + var(--safe-bot));
 }
+
+.thoughts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-dim);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  text-align: center;
+  max-height: 4.4em;
+  overflow: hidden;
+}
+
+.thoughts li { margin: 0; }
+.thoughts li:last-child { color: var(--cream); }
 
 .verse {
   margin: 0;
@@ -302,10 +322,16 @@ input[type="range"]::-moz-range-thumb {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "verse verse"
+      "thoughts thoughts"
       "dials tel";
     align-items: end;
     gap: 14px 18px;
     padding: 0 28px calc(22px + var(--safe-bot));
+  }
+  .thoughts {
+    grid-area: thoughts;
+    text-align: left;
+    max-height: 3.2em;
   }
   .verse {
     grid-area: verse;

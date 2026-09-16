@@ -74,6 +74,56 @@ const BANK = {
     "1.9e7 copies, neurons plus connective tissue.",
     "Same wet mass. Still a fly motif.",
   ],
+  epg: [
+    "The compass is bumping north.",
+    "EPG holding the heading steady.",
+    "A ring locked to the route.",
+  ],
+  pen: [
+    "The shift is happening.",
+    "PEN is rewriting the path.",
+    "The heading is moving to a new place.",
+  ],
+  peg: [
+    "Feedback into the system.",
+    "PEG is reading the work back.",
+    "The ring hears what it asked for.",
+  ],
+  delta7: [
+    "Sharpening and holding the line.",
+    "Delta7 is sculpting the thought.",
+    "Inhibit and clarify.",
+  ],
+  el: [
+    "One more layer. Extra work.",
+    "EL is adding to the depth.",
+    "The extra ring is thinking too.",
+  ],
+  steer: [
+    "You turned the compass.",
+    "The bump is going where you pointed.",
+    "A hand on the heading.",
+  ],
+  kick: [
+    "The stacks lost the lock.",
+    "A kick. Each ring starts over.",
+    "Desync by hand.",
+  ],
+  target: [
+    "A heading to seek.",
+    "You pointed. The stack has to turn.",
+    "The target is on the ring.",
+  ],
+  acquire: [
+    "On target. The compass caught it.",
+    "Score is high. The bump is home.",
+    "The stack found the heading it was asked for.",
+  ],
+  miss: [
+    "Off target. The stack is wrong.",
+    "The heading is not the thing it wants.",
+    "Error is open. The ring is still turning.",
+  ],
 };
 
 let clock = 0;
@@ -84,9 +134,16 @@ function num(v, fallback) {
 }
 
 function regime(m) {
+  if (m && (m.gesture === "steer" || m.gesture === "kick" || m.gesture === "target")) {
+    return m.gesture;
+  }
   if (m && Number(m.fraction) >= 0.99) {
     if (m.regime && m.regime !== "idle" && m.regime !== "weight") return m.regime;
     return "weight";
+  }
+  const circuitKey = m && ["epg", "pen", "peg", "delta7", "el"].includes(m.circuit) ? m.circuit : null;
+  if (circuitKey && m.regime && ["heading", "idle", "agree", "wave"].includes(m.regime)) {
+    return circuitKey;
   }
   if (m && m.regime) return m.regime;
   const N = num(m && m.N, 1);

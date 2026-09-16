@@ -13,6 +13,10 @@ const MEAN_PULL = 0.40;
 const BUMP_AMP = 0.42;
 const BUMP_WIDTH = 3.2;
 const NOISE = 0.01;
+const FLY_GLIA = 0.082;
+const GLIA_ALPHA = 1.15;
+const SEEK_TURN = 0.42;
+const HOLD_AMP = 0.55;
 
 let memo = null;
 
@@ -30,6 +34,7 @@ export function create(graph, { N = 3, K = 4 } = {}) {
     N: 1,
     K: clampInt(K, 1, 16),
     epg: epgList(graph),
+    types: buildTypeIndex(graph),
     seeds: [],
     vs: [],
     residual: 0,
@@ -39,6 +44,19 @@ export function create(graph, { N = 3, K = 4 } = {}) {
     isolate: 0,
     intf: 0,
     lastHeading: 0,
+    drive: 0,
+    target: 0,
+    error: 0,
+    score: 0,
+    quiet: 0,
+    gesture: null,
+    gestureFrames: 0,
+    flash: 0,
+    glia: true,
+    gliaFrac: FLY_GLIA,
+    g: null,
+    gMean: 0,
+    gainEff: GAIN,
     _pred: null,
     _inc: null,
     _scratch: null,
@@ -51,6 +69,7 @@ export function setN(world, N) {
   const next = clampInt(N, 1, 8);
   const n = world.graph.nodes.length;
   world.N = next;
+  if (!world.types) world.types = buildTypeIndex(world.graph);
   for (let i = 0; i < next; i++) {
     if (world.seeds[i] === undefined) world.seeds[i] = seedFor(i);
   }
@@ -62,15 +81,101 @@ export function setN(world, N) {
   world._inc = new Float32Array(n);
   world._scratch = new Float32Array(next * n);
   world.residual = 0;
+  const { heading } = epgOrder(world);
+  world.drive = heading;
+  world.target = heading;
+  world.g = new Float32Array(next);
 }
 
 export function setK(world, K) {
   world.K = clampInt(K, 1, 16);
 }
 
+export function markGesture(world, name, frames = 90) {
+  world.gesture = name;
+  world.gestureFrames = frames;
+  world.quiet = 0;
+  world.flash = 1;
+}
+
+export function injectHeading(world, heading, amount = 0.55, mark = true) {
+  if (!world || !world.vs || !world.vs.length) return heading;
+  const list = world.graph.nodes;
+  const n = list.length;
+  const bx = Math.cos(heading);
+  const by = Math.sin(heading);
+  const keep = mark ? 0.10 : 0.08;
+  for (let s = 0; s < world.N; s++) {
+    const v = world.vs[s];
+    for (let i = 0; i < n; i++) {
+      const nd = list[i];
+      const dx = nd.x - bx;
+      const dy = nd.y - by;
+      const g = Math.exp(-(dx * dx + dy * dy) * BUMP_WIDTH);
+      let next = v[i] * keep + amount * g;
+      if (next > 1) next = 1;
+      if (next < -1) next = -1;
+      v[i] = next;
+    }
+  }
+  if (mark) {
+    world.drive = heading;
+    world.target = heading;
+    markGesture(world, "steer");
+  }
+  return heading;
+}
+
+export function kick(world) {
+  if (!world) return;
+  const graph = world.graph;
+  const epg = world.epg;
+  for (let i = 0; i < world.N; i++) {
+    world.seeds[i] = (world.seeds[i] + 0.41 + i * 0.17) % 1;
+    world.vs[i] = bindStack(graph, epg, world.seeds[i]);
+  }
+  world.drive = (world.drive || 0) + Math.PI * 0.5;
+  if (world.drive > Math.PI) world.drive -= Math.PI * 2;
+  markGesture(world, "kick", 120);
+}
+
+export function wander(world) {
+  if (!world || !world.vs || !world.vs.length) return;
+  if (world.gesture === "target" && (world.gestureFrames || 0) > 0) {
+    world.quiet = 0;
+    return;
+  }
+  if (world.gesture === "steer" && (world.gestureFrames || 0) > 0) {
+    world.quiet = 0;
+    return;
+  }
+  if (world.gesture === "kick" && (world.gestureFrames || 0) > 48) return;
+  world.quiet = (world.quiet || 0) + 1;
+  if (world.quiet < 28) return;
+  world.target = wrapPi((world.target || 0) + 0.055);
+}
+
+export function setTarget(world, heading) {
+  if (!world) return heading;
+  world.target = wrapPi(heading);
+  markGesture(world, "target", 100);
+  return world.target;
+}
+
+export function applyMotif(v, graph, K, gain) {
+  const inc = new Float32Array(v.length);
+  const loops = clampInt(K, 1, 16);
+  const g = Number.isFinite(gain) ? gain : GAIN;
+  for (let k = 0; k < loops; k++) applyW(v, graph.edges, inc, g);
+  return v;
+}
+
 export function step(world) {
   const { vs, N, K, graph, _pred, _inc } = world;
   const n = vs[0].length;
+  updateGlia(world);
+  const kicking = world.gesture === "kick" && (world.gestureFrames || 0) > 40;
+  if (!kicking) seek(world);
   _pred.set(vs[N - 1]);
 
   for (let k = 0; k < K; k++) {
@@ -78,7 +183,7 @@ export function step(world) {
       couple(world);
       tissue(world);
     }
-    for (let i = 0; i < N; i++) applyW(vs[i], graph.edges, _inc);
+    for (let i = 0; i < N; i++) applyW(vs[i], graph.edges, _inc, world.gainEff);
   }
 
   let sum = 0;
@@ -93,6 +198,7 @@ export function step(world) {
   world.second = Math.abs(safeRes - prev);
   world.prevResidual = prev;
   world.residual = safeRes;
+  readWorld(world);
 }
 
 export function metrics(world) {
@@ -108,6 +214,9 @@ export function metrics(world) {
   const intf = interfere(world);
   world.intf = intf;
   const split = splitGrams(world.N);
+  const te = typeEnergy(world);
+  if ((world.gestureFrames || 0) > 0) world.gestureFrames -= 1;
+  else world.gesture = null;
   return {
     order,
     corr,
@@ -118,6 +227,18 @@ export function metrics(world) {
     intf,
     heading,
     regime: classify(world, order, corr, isolate, intf),
+    epg: te.epg,
+    pen: te.pen,
+    peg: te.peg,
+    delta7: te.delta7,
+    el: te.el,
+    circuit: hottestCircuit(te),
+    gesture: world.gesture || null,
+    target: world.target || 0,
+    error: world.error || 0,
+    score: world.score || 0,
+    gain: world.gainEff || GAIN,
+    g: world.gMean || 0,
     n: world.graph.nodes.length,
     e: world.graph.edges.length,
     N: world.N,
@@ -143,6 +264,57 @@ export function nodes(world) {
 
 export function epgIndex(world) {
   return world.epg;
+}
+
+export function typeEnergy(world) {
+  const v = world.vs[0];
+  const types = world.types;
+  return {
+    epg: meanAbsAt(v, types.epg),
+    pen: meanAbsAt(v, types.pen),
+    peg: meanAbsAt(v, types.peg),
+    delta7: meanAbsAt(v, types.delta7),
+    el: meanAbsAt(v, types.el),
+  };
+}
+
+function typeFamily(type) {
+  if (type === "EPG" || type === "EPGt") return "epg";
+  if (type.indexOf("PEN") === 0) return "pen";
+  if (type === "PEG") return "peg";
+  if (type === "Delta7") return "delta7";
+  if (type === "EL") return "el";
+  return null;
+}
+
+function buildTypeIndex(graph) {
+  const types = { epg: [], pen: [], peg: [], delta7: [], el: [] };
+  const list = graph && graph.nodes;
+  if (!list) return types;
+  for (let i = 0; i < list.length; i++) {
+    const fam = typeFamily(list[i].type || "");
+    if (fam) types[fam].push(list[i].i);
+  }
+  return types;
+}
+
+function meanAbsAt(v, indices) {
+  const n = indices.length;
+  if (!n) return 0;
+  let sum = 0;
+  for (let k = 0; k < n; k++) sum += Math.abs(v[indices[k]]);
+  const mean = sum / n;
+  return Number.isFinite(mean) ? mean : 0;
+}
+
+function hottestCircuit(te) {
+  let best = "epg";
+  let bestV = te.epg;
+  if (te.pen > bestV) { best = "pen"; bestV = te.pen; }
+  if (te.peg > bestV) { best = "peg"; bestV = te.peg; }
+  if (te.delta7 > bestV) { best = "delta7"; bestV = te.delta7; }
+  if (te.el > bestV) { best = "el"; bestV = te.el; }
+  return best;
 }
 
 function epgList(graph) {
@@ -225,12 +397,13 @@ function interfere(world) {
   return Number.isFinite(v) ? v : 0;
 }
 
-function applyW(v, edges, inc) {
+function applyW(v, edges, inc, gain) {
   const n = v.length;
+  const g = Number.isFinite(gain) ? gain : GAIN;
   for (let i = 0; i < n; i++) inc[i] = 0;
   for (let e = 0; e < edges.length; e++) {
     const ed = edges[e];
-    inc[ed.t] += tanh(v[ed.s]) * ed.w * ed.sign * GAIN;
+    inc[ed.t] += tanh(v[ed.s]) * ed.w * ed.sign * g;
   }
   let mean = 0;
   for (let i = 0; i < n; i++) {
@@ -309,12 +482,84 @@ function isolation(world) {
   return 1 - worst;
 }
 
+function wrapPi(a) {
+  let x = a;
+  while (x > Math.PI) x -= Math.PI * 2;
+  while (x < -Math.PI) x += Math.PI * 2;
+  return x;
+}
+
+function readWorld(world) {
+  const { heading } = epgOrder(world);
+  if (!Number.isFinite(world.target)) world.target = heading;
+  const err = wrapPi(world.target - heading);
+  world.error = err;
+  const score = (1 + Math.cos(err)) / 2;
+  world.score = Number.isFinite(score) ? score : 0;
+  return heading;
+}
+
+function seek(world) {
+  const heading = readWorld(world);
+  const err = world.error;
+  let dest;
+  if (Math.abs(err) > 0.85) {
+    dest = world.target;
+  } else {
+    let turn = err;
+    if (turn > SEEK_TURN) turn = SEEK_TURN;
+    if (turn < -SEEK_TURN) turn = -SEEK_TURN;
+    dest = wrapPi(heading + turn);
+  }
+  world.drive = dest;
+  injectHeading(world, dest, Math.abs(err) > 0.85 ? 0.70 : HOLD_AMP, false);
+}
+
+function updateGlia(world) {
+  if (!world.glia) {
+    world.gainEff = GAIN;
+    world.gMean = 0;
+    return;
+  }
+  const N = world.N;
+  const vs = world.vs;
+  if (!vs || !vs.length) {
+    world.gainEff = GAIN;
+    return;
+  }
+  if (!world.g || world.g.length !== N) world.g = new Float32Array(N);
+  const n = vs[0].length;
+  const frac = Number.isFinite(world.gliaFrac) ? world.gliaFrac : FLY_GLIA;
+  let sumG = 0;
+  for (let i = 0; i < N; i++) {
+    const v = vs[i];
+    let meanAbs = 0;
+    for (let j = 0; j < n; j++) meanAbs += Math.abs(v[j]);
+    meanAbs /= n;
+    let gi = world.g[i] + 0.16 * (meanAbs - 0.16);
+    if (N > 1) {
+      const prev = world.g[(i - 1 + N) % N];
+      const next = world.g[(i + 1) % N];
+      gi += 0.12 * (0.5 * (prev + next) - world.g[i]);
+    }
+    if (gi < 0) gi = 0;
+    if (gi > 1) gi = 1;
+    world.g[i] = gi;
+    sumG += gi;
+  }
+  world.gMean = sumG / N;
+  world.gainEff = GAIN * (1 + GLIA_ALPHA * frac * world.gMean);
+  if (!Number.isFinite(world.gainEff)) world.gainEff = GAIN;
+}
+
 function classify(world, order, corr, isolate, intf) {
   const N = world.N;
   const K = world.K;
   if (N === 1 && K === 1) return "both";
   if (N === 1) return "noN";
   if (K === 1) return "noK";
+  if ((world.score || 0) > 0.88) return "acquire";
+  if ((world.score || 0) < 0.22 && order > 0.16) return "miss";
   if (N >= 3 && isolate > 0.55 && corr > 0.45) return "cancer";
   if (corr < 0.38) return "fission";
   if (order > 0.22 && intf < -0.04) return "cancel";
