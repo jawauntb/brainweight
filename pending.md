@@ -1,6 +1,6 @@
 # pending
 
-Handoff. Do not start these until asked. The live ceiling is the 1.9e7 tissue run. This file is the next queue.
+Handoff. Do not start these until asked. The live ceiling is 9.4e6 W+T units. This file is the next queue.
 
 ## Mini GPT, same W vs unique layers
 
@@ -51,7 +51,7 @@ N=3, K=4. With `g`, effective gain moves when activity is high. Without `g`, it 
 
 ### When to start
 
-The slow field `g` is this cut. It updates once per tick, couples to neighbor `g`, and gates `GAIN`. `TISSUE` stays the Laplacian. The 1.9e7 run uses a human cell-count fraction (~0.5) and labels it an estimate. If a later fly-fraction vs human-fraction mass pair does not move `intf` / `wave` / `reg`, say the proxy is decoration.
+The slow field `g` is this cut. It updates once per tick, couples to neighbor `g`, and gates `GAIN`. `TISSUE` stays the Laplacian. The 9.4e6 run uses a human cell-count fraction (~0.5) and labels it an estimate. If a later fly-fraction vs human-fraction mass pair does not move `intf` / `wave` / `reg`, say the proxy is decoration.
 
 ## Analogous circuits (Olah)
 

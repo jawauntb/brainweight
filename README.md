@@ -30,7 +30,7 @@ The lineage is old enough to cite. Universal Transformers tie weights across dep
 
 Emergence here means a dynamical regime that neither a single copy nor a single pass can produce. Reafference is one: the stack predicting its own next state. Another is analog interference (Miller, Brincat, and Roy 2026, *Journal of Neuroscience*, doi:10.1523/JNEUROSCI.0711-26.2026): W stores the motif, a connective tissue field lets neighboring stacks add or cancel. Telemetry `intf` is that sum. Positive is constructive. Negative is cancel.
 
-The wet-mass target already includes connective tissue, glia, and neuropil. Zheng's volume is the whole organ, not neurons alone. The cell-count split is labeled: fly neurons are 91.8% of brain cells (Raji and Potter 2021). That is not a weighing. Human tissue is about half glia. The 1.9e7 run is same grams, including the non-neural share. It is still a fly motif.
+The wet-mass estimate already includes connective tissue, glia, and neuropil. Zheng's volume is the whole organ, not neurons alone. The cell-count split is labeled: fly neurons are 91.8% of brain cells (Raji and Potter 2021). That is not a weighing. Human tissue is about half glia. Motif-full at 1.9e7 would be those grams. This cut pairs a tiny transformer with each motif, so the live stack is 9.4e6 units and about 754 g of motif, not 1508 g of a human brain.
 
 ## Run
 
@@ -43,12 +43,12 @@ http://localhost:3000
 
 Live: [brainweight-production.up.railway.app](https://brainweight-production.up.railway.app)
 
-The brain is 18,850,000 copies of the 47-cell motif, stacked and looped on one L4. That is the spec. The rings are a window (at most 8). After a gesture and 8s, `/think/mass` keeps that 1.9e7 stack live and steps it. N in telemetry is 1.9e7. Wet mass at that count is 1508 g / 80 μg, estimated from Zheng volume, not a weighing. The motif is not a whole fly. Stacking it to the same grams does not grow human tissue.
+The live stack is 9,425,000 units on one L4. One unit is the 47-cell motif W plus a shared tiny transformer T (8-d, one head, frozen). That is the spec. Pairing cuts motif copies by half. The rings are a window (at most 8). After a gesture and 8s, `/think/mass` keeps that 9.4e6 stack live and steps W then T. N in telemetry is 9.4e6. Motif wet mass at that count is 754 g / 80 μg, estimated from Zheng volume, not a weighing. The motif is not a whole fly. Stacking it does not grow human tissue.
 
 Deep clock: Modal L4 on `modal_mind/fly-deep.json` (754 / 7200), proxied at `/think`. Scale to zero. No GPU on first paint, in the first 8s, or before a gesture. No websocket.
 
 Borrow, not a copy of the lattice-animal app: Express, no build, `public/*.js`, Fraunces + JetBrains Mono, tissue palette (`--mind --bound --committed --animal --cream --ink`), `Cache-Control: no-store` on HTML, `railway.json` + `/healthz`. No emojis unless asked. No `console.log` in prod.
 
-Assay: `npm run assay` runs the circuit/seek/glia check and the mini-GPT twins (unique layers vs looped W on the same tiny corpus).
+Assay: `npm run assay` runs the mass/pair check, the circuit/seek/glia check, and the mini-GPT twins (unique layers vs looped W+T on the same tiny corpus).
 
 The next agent executes [`instruction.md`](instruction.md) and [`AGENTS.md`](AGENTS.md). What is still parked lives in [`pending.md`](pending.md).

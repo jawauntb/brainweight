@@ -1,6 +1,6 @@
 // Deferred deep clock. HTTP only. No websocket (kills scale-to-zero).
 // Do not call GPU on first paint, in the first 8s, or before a gesture.
-// Mass is the brain: N = 1.9e7, stacked and looped, kept live on the L4.
+// Mass is 9.4e6 paired units on the L4. One unit is motif W plus a tiny T.
 
 import { TARGET_COPIES } from "./mass.js";
 
@@ -157,6 +157,7 @@ export async function requestMass(world, m) {
         fraction: data.fraction || 0,
         mass_g: data.mass_g || 0,
         residual: data.residual || 0,
+        corr: data.corr || 0,
         intf: data.intf || 0,
         wave: data.wave || 0,
         regime: data.regime || "weight",
@@ -170,6 +171,8 @@ export async function requestMass(world, m) {
         g: data.g || 0,
         steps: data.steps || 0,
         live: !!data.live,
+        pair: data.pair !== false,
+        motif_frac: data.motif_frac || 0,
         reason: "weight",
       };
     } else {
