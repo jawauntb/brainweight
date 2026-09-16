@@ -212,42 +212,51 @@ def _run_mass(N, K):
         v = v.clamp(-1, 1)
         del inc
     residual = float(torch.sqrt(((pred - v[0]) ** 2).mean()).item())
-    sample = min(4096, max(1, N - 1))
-    idx = torch.linspace(0, N - 2, steps=sample, device=device).long()
-    a = v.index_select(0, idx)
-    b = v.index_select(0, idx + 1)
-    corr = float(_pearson_rows(a, b).mean().item())
-    intf = float((a * b).mean().item())
-    nodes = g["nodes"]
-    epg_x = torch.tensor([nodes[i]["x"] for i in epg], device=device)
-    epg_y = torch.tensor([nodes[i]["y"] for i in epg], device=device)
-    epg_i = torch.tensor(epg, device=device, dtype=torch.long)
-    samp = v.index_select(0, torch.linspace(0, N - 1, steps=min(512, N), device=device).long())
-    sx = (samp.index_select(1, epg_i) * epg_x).sum(dim=1)
-    sy = (samp.index_select(1, epg_i) * epg_y).sum(dim=1)
-    heading = torch.atan2(sy, sx)
-    dH = heading[1:] - heading[:-1]
-    dH = (dH + torch.pi) % (2 * torch.pi) - torch.pi
-    wave = float(dH.abs().mean().item()) if dH.numel() else 0.0
-    order = float((sx[0].square() + sy[0].square()).sqrt().item() / max(len(epg), 1))
-    if order > 1:
-        order = 1.0
-    if corr < 0.38:
-        regime = "fission"
-    elif order > 0.22 and intf < -0.04:
-        regime = "cancel"
-    elif order > 0.22 and wave > 0.035 and intf > 0.04:
-        regime = "analog"
-    elif order > 0.22 and wave > 0.035:
-        regime = "wave"
-    elif residual > 0.10:
-        regime = "lie"
-    elif order > 0.30:
-        regime = "heading"
-    elif corr > 0.75:
-        regime = "agree"
+    if N < 2:
+        corr = 1.0
+        intf = 0.0
+        wave = 0.0
+        order = 0.0
+        regime = "noN"
     else:
-        regime = "idle"
+        sample = min(4096, N - 1)
+        idx = (torch.arange(sample, device=device) * (N - 2) // max(sample - 1, 1)).clamp(0, N - 2)
+        a = v.index_select(0, idx)
+        b = v.index_select(0, idx + 1)
+        corr = float(_pearson_rows(a, b).mean().item())
+        intf = float((a * b).mean().item())
+        nodes = g["nodes"]
+        epg_x = torch.tensor([nodes[i]["x"] for i in epg], device=device)
+        epg_y = torch.tensor([nodes[i]["y"] for i in epg], device=device)
+        epg_i = torch.tensor(epg, device=device, dtype=torch.long)
+        take = min(512, N)
+        samp_i = (torch.arange(take, device=device) * (N - 1) // max(take - 1, 1)).clamp(0, N - 1)
+        samp = v.index_select(0, samp_i)
+        sx = (samp.index_select(1, epg_i) * epg_x).sum(dim=1)
+        sy = (samp.index_select(1, epg_i) * epg_y).sum(dim=1)
+        heading = torch.atan2(sy, sx)
+        dH = heading[1:] - heading[:-1]
+        dH = (dH + torch.pi) % (2 * torch.pi) - torch.pi
+        wave = float(dH.abs().mean().item()) if dH.numel() else 0.0
+        order = float((sx[0].square() + sy[0].square()).sqrt().item() / max(len(epg), 1))
+        if order > 1:
+            order = 1.0
+        if corr < 0.38:
+            regime = "fission"
+        elif order > 0.22 and intf < -0.04:
+            regime = "cancel"
+        elif order > 0.22 and wave > 0.035 and intf > 0.04:
+            regime = "analog"
+        elif order > 0.22 and wave > 0.035:
+            regime = "wave"
+        elif residual > 0.10:
+            regime = "lie"
+        elif order > 0.30:
+            regime = "heading"
+        elif corr > 0.75:
+            regime = "agree"
+        else:
+            regime = "idle"
     mass_g = HUMAN_G if N == TARGET_COPIES else HUMAN_G * (N / TARGET_COPIES)
     neuron_g = mass_g * FLY_NEURON_CELL
     tissue_g = mass_g - neuron_g
