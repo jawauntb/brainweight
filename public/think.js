@@ -1,6 +1,6 @@
 // Deferred deep clock. HTTP only. No websocket (kills scale-to-zero).
 // Do not call GPU on first paint, in the first 8s, or before a gesture.
-// Mass run is one shot: N = 1.9e7 copies of the 47-cell motif on the L4.
+// Mass is the brain: N = 1.9e7, stacked and looped, kept live on the L4.
 
 import { TARGET_COPIES } from "./mass.js";
 
@@ -14,7 +14,9 @@ const clock = {
   inflight: false,
   last: { ok: false, gpu: false, n: 0, e: 0, ms: 0, reason: 'idle' },
   mass: null,
-  massAsked: false,
+  massInflight: false,
+  world: null,
+  m: null,
 };
 
 export function thinkStats() {
@@ -110,12 +112,14 @@ export async function requestThink(world, frame, m) {
 }
 
 export async function requestMass(world, m) {
+  if (world) clock.world = world;
+  if (m) clock.m = m;
   const now = performance.now();
   if (!clock.born) clock.born = now;
   if (!clock.armed) return null;
   if (now - clock.born < OPENING_MS) return null;
-  if (clock.massAsked) return null;
-  clock.massAsked = true;
+  if (clock.massInflight) return null;
+  clock.massInflight = true;
   try {
     const res = await fetch("/think/mass", {
       method: "POST",
@@ -129,7 +133,18 @@ export async function requestMass(world, m) {
       }),
     });
     const data = await res.json();
-    if (data && data.ok) {
+    if (data && data.ok && data.N !== TARGET_COPIES) {
+      clock.mass = {
+        ok: false,
+        gpu: !!data.gpu,
+        mode: "mass",
+        n: data.n || 0,
+        e: data.e || 0,
+        ms: data.ms || 0,
+        N: data.N || 0,
+        reason: "short",
+      };
+    } else if (data && data.ok) {
       clock.mass = {
         ok: true,
         gpu: true,
@@ -153,6 +168,8 @@ export async function requestMass(world, m) {
         score: data.score || 0,
         gain: data.gain || 0,
         g: data.g || 0,
+        steps: data.steps || 0,
+        live: !!data.live,
         reason: "weight",
       };
     } else {
@@ -168,7 +185,14 @@ export async function requestMass(world, m) {
     }
     return data;
   } catch {
-    clock.last = { ok: false, gpu: false, n: 0, e: 0, ms: 0, reason: "down" };
+    clock.mass = { ok: false, gpu: false, mode: "mass", n: 0, e: 0, ms: 0, reason: "down" };
     return null;
+  } finally {
+    clock.massInflight = false;
+    if (clock.armed) {
+      const ok = clock.mass && clock.mass.ok;
+      const wait = ok ? 400 : 8000;
+      setTimeout(() => requestMass(clock.world, clock.m), wait);
+    }
   }
 }
