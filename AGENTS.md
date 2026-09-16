@@ -1,6 +1,6 @@
 # AGENTS.md
 
-How to work in this repo. Read `instruction.md` first. Then this file.
+How to work in this repo. Read `instruction.md` first. Then this file. Future work lives in `pending.md`. Do not start it until asked.
 
 ## Spec
 
@@ -12,7 +12,7 @@ Commit and open a PR as soon as a check passes. Do not sit on an uncommitted pil
 
 Push the branch. Use `gh pr create` if no PR exists. Update the existing PR if it does.
 
-Merge only when the user says ship or merge. This cut: they said merge to main.
+Merge only when the user says ship or merge.
 
 Do not force-push. Do not skip hooks. Do not commit secrets, `.env`, or `THINK_TOKEN`.
 
