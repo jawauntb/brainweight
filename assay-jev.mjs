@@ -8,6 +8,7 @@ import { dirname, join } from "path";
 import {
   QUESTIONS,
   VERBS,
+  MOMENTS,
   OPENROUTER_URL,
   OPENROUTER_DEFAULT_MODEL,
   buildJevMessages,
@@ -28,6 +29,8 @@ if (QUESTIONS.verb.type !== "choice") fail("verb is not a choice");
 if (QUESTIONS.lock.type !== "score") fail("lock is not a score");
 if (QUESTIONS.thought.type !== "noul") fail("thought is not a noul");
 if (QUESTIONS.matter.type !== "choice") fail("matter is not a choice");
+if (QUESTIONS.moment.type !== "choice") fail("moment is not a choice");
+if (QUESTIONS.emergent.type !== "noul") fail("emergent is not a noul");
 
 const lockState = packState({ residual: 0.01, corr: 0.98, score: 0.99, error: 0.05, pair: true }, { id: "steer" });
 const lockAns = judge(lockState);
@@ -36,12 +39,43 @@ if (!lockRead) fail("judge(lock) did not parse");
 if (lockRead.verb !== "kick") fail(`lock verb is ${lockRead.verb}, not kick`);
 if (lockRead.thought > 0.4) fail(`lock thought ${lockRead.thought} is too high`);
 if (lockRead.lock >= 1) fail(`lock score ${lockRead.lock} is not the lock level`);
+if (lockRead.moment !== "lock") fail(`lock moment is ${lockRead.moment}, not lock`);
+if (lockRead.emergent > 0.3) fail(`lock emergent ${lockRead.emergent} should be low without N and K`);
 
 const missState = packState({ residual: 0.22, corr: 0.4, score: 0.3, error: 1.2, pair: true }, { id: "res" });
 const missRead = parseAnswers(judge(missState));
 if (!missRead) fail("judge(miss) did not parse");
 if (missRead.thought < 0.5) fail(`miss thought ${missRead.thought} is too low`);
 if (VERBS.indexOf(missRead.verb) === -1) fail("miss verb is not in VERBS");
+if (MOMENTS.indexOf(missRead.moment) === -1) fail("miss moment is not in MOMENTS");
+if (missRead.moment !== "fission") fail(`miss moment is ${missRead.moment}, not fission`);
+
+const both = parseAnswers(judge(packState({
+  residual: 0.12,
+  corr: 0.7,
+  score: 0.8,
+  error: 0.2,
+  N: 3,
+  K: 4,
+  wave: 0.05,
+  intf: 0.1,
+  depth: 0.04,
+  pair: true,
+}, { id: "res" })));
+if (!both || both.emergent < 0.5) fail("emergent did not rise when N, K, and wave are live");
+const one = parseAnswers(judge(packState({
+  residual: 0.12,
+  corr: 0.7,
+  score: 0.8,
+  error: 0.2,
+  N: 1,
+  K: 1,
+  wave: 0.05,
+  intf: 0.1,
+  depth: 0.04,
+  pair: true,
+}, { id: "res" })));
+if (!one || one.emergent > 0.2) fail("emergent stayed high at N=1 K=1");
 
 const done = act(missRead);
 if (!done.hint || done.hint.length < 8) fail("act() has no hint");
@@ -70,6 +104,8 @@ if (!server.includes("OPENROUTER_API_KEY") || !server.includes("askOpenRouter"))
 
 const html = readFileSync(join(__dirname, "public", "index.html"), "utf8");
 if (!html.includes("id=\"t-jev\"")) fail("index.html missing jev telemetry");
+if (!html.includes("id=\"depth\"")) fail("index.html missing depth tape");
+if (!html.includes("id=\"moment\"")) fail("index.html missing moment line");
 
 const ask = readFileSync(join(__dirname, "public", "ask.js"), "utf8");
 if (!ask.includes("if (!clock.armed)")) fail("ask.js calls Jev before a gesture");

@@ -255,6 +255,7 @@ export function step(world) {
   const kicking = world.gesture === "kick" && (world.gestureFrames || 0) > 40;
   if (!kicking) seek(world);
   _pred.set(vs[N - 1]);
+  if (!world.passes || world.passes.length !== K) world.passes = new Array(K);
 
   for (let k = 0; k < K; k++) {
     if (N > 1) {
@@ -265,20 +266,22 @@ export function step(world) {
       applyW(vs[i], graph.edges, _inc, world.gainEff);
       if (world.pair !== false) applyT(vs[i], graph.nodes, world._tbuf);
     }
+    let sum = 0;
+    const after = vs[0];
+    for (let i = 0; i < n; i++) {
+      const d = _pred[i] - after[i];
+      sum += d * d;
+    }
+    const residual = Math.sqrt(sum / n);
+    world.passes[k] = Number.isFinite(residual) ? residual : 0;
   }
 
-  let sum = 0;
-  const after = vs[0];
-  for (let i = 0; i < n; i++) {
-    const d = _pred[i] - after[i];
-    sum += d * d;
-  }
-  const residual = Math.sqrt(sum / n);
-  const safeRes = Number.isFinite(residual) ? residual : 0;
+  const safeRes = world.passes[K - 1] || 0;
   const prev = world.residual || 0;
   world.second = Math.abs(safeRes - prev);
   world.prevResidual = prev;
   world.residual = safeRes;
+  world.depth = K < 2 ? 0 : Math.abs((world.passes[K - 1] || 0) - (world.passes[0] || 0));
   readWorld(world);
 }
 
@@ -302,6 +305,8 @@ export function metrics(world) {
     order,
     corr,
     residual: world.residual,
+    passes: world.passes ? world.passes.slice() : [],
+    depth: world.depth || 0,
     second: world.second || 0,
     wave: world.wave || 0,
     isolate,

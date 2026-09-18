@@ -30,6 +30,8 @@ const btnKick = document.getElementById("btn-kick");
 const btnMute = document.getElementById("btn-mute");
 const btnPanels = document.getElementById("btn-panels");
 const hintEl = document.getElementById("hint");
+const momentEl = document.getElementById("moment");
+const depthEl = document.getElementById("depth");
 const fieldEl = document.getElementById("field");
 const fieldStep = document.getElementById("field-step");
 const fieldText = document.getElementById("field-text");
@@ -49,6 +51,7 @@ const tGpu = document.getElementById("t-gpu");
 const tMass = document.getElementById("t-mass");
 const tPair = document.getElementById("t-pair");
 const tJev = document.getElementById("t-jev");
+const tDepth = document.getElementById("t-depth");
 const tWebgpu = document.getElementById("t-webgpu");
 const thoughtsEl = document.getElementById("thoughts");
 const thoughtLog = [];
@@ -154,6 +157,27 @@ function writeField(beat) {
   if (fieldText) fieldText.textContent = now.text;
 }
 
+function writeDepth(m) {
+  if (!depthEl) return;
+  const passes = Array.isArray(m.passes) ? m.passes : [];
+  const k = Math.max(1, (m.K | 0) || passes.length || 1);
+  if (depthEl.children.length !== k) {
+    depthEl.replaceChildren();
+    for (let i = 0; i < k; i++) {
+      const li = document.createElement("li");
+      li.appendChild(document.createElement("i"));
+      depthEl.appendChild(li);
+    }
+  }
+  for (let i = 0; i < depthEl.children.length; i++) {
+    const r = Number(passes[i]);
+    const h = Number.isFinite(r) ? Math.max(0.08, Math.min(1, r / 0.28)) : 0.08;
+    const bar = depthEl.children[i].firstChild;
+    if (bar) bar.style.transform = `scaleY(${h})`;
+    depthEl.children[i].classList.toggle("is-last", i === k - 1);
+  }
+}
+
 function setMutedUi(on) {
   const muted = setMuted(on);
   if (!btnMute) return muted;
@@ -201,12 +225,19 @@ function writeTelemetry(m) {
   const judged = jevStats();
   if (tJev) {
     tJev.textContent = judged.ok
-      ? `${judged.source || "jev"} ${judged.verb || ""}`
+      ? `${judged.source || "jev"} ${judged.moment || judged.verb || ""}`
       : (judged.reason || "idle");
   }
   if (hintEl && hintEl.dataset.mode === "jev" && judged.ok && judged.hint) {
     hintEl.hidden = false;
     hintEl.textContent = judged.hint;
+  }
+  if (tDepth) tDepth.textContent = fmt(m.depth, 3);
+  writeDepth(m);
+  if (momentEl && judged.ok && judged.momentHint) {
+    momentEl.hidden = false;
+    momentEl.classList.toggle("is-emergent", judged.emergent > 0.55);
+    momentEl.textContent = judged.momentHint;
   }
   const local = webgpuStats();
   if (tWebgpu) {

@@ -193,6 +193,32 @@ function assayGlia(graph) {
   );
 }
 
+function assayDepth(graph) {
+  const deep = create(graph, { N: 3, K: 4 });
+  for (let i = 0; i < 6; i++) step(deep);
+  const m = metrics(deep);
+  if (!Array.isArray(m.passes) || m.passes.length !== 4) {
+    fail(`passes length ${m.passes && m.passes.length}, want 4`);
+  }
+  for (let i = 0; i < m.passes.length; i++) {
+    if (!Number.isFinite(m.passes[i])) fail(`passes[${i}] is not finite`);
+  }
+  if (!Number.isFinite(m.depth)) fail(`depth ${m.depth} is not finite`);
+
+  const shallow = create(graph, { N: 3, K: 1 });
+  for (let i = 0; i < 4; i++) step(shallow);
+  const one = metrics(shallow);
+  if (!Array.isArray(one.passes) || one.passes.length !== 1) {
+    fail(`K=1 passes length ${one.passes && one.passes.length}, want 1`);
+  }
+  if (one.depth !== 0) fail(`K=1 depth ${one.depth} is not 0`);
+
+  process.stdout.write(
+    `depth: K4 passes=${m.passes.map((v) => v.toFixed(3)).join(",")} ` +
+      `work=${m.depth.toFixed(4)} K1=${one.passes[0].toFixed(3)}\n`
+  );
+}
+
 function assayPair(graph) {
   const world = create(graph, { N: 3, K: 4 });
   const m0 = metrics(world);
@@ -253,6 +279,7 @@ assayKick(graph);
 assayWander(graph);
 assaySeek(graph);
 assayGlia(graph);
+assayDepth(graph);
 assayPair(graph);
 
 process.stdout.write("PASS\n");
