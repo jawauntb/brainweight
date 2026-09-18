@@ -15,7 +15,7 @@ function fail(msg) {
   process.exit(1);
 }
 
-if (BEATS.length !== 6) fail(`BEATS length ${BEATS.length}, not 6`);
+if (BEATS.length !== 7) fail(`BEATS length ${BEATS.length}, not 7`);
 if (HOLD < 120) fail("HOLD is too short to read a note");
 if (isArmed()) fail("tone armed itself without a gesture");
 
@@ -26,6 +26,10 @@ if (/weighs a human|is a human brain/i.test(texts)) {
 if (texts.includes("consciousness")) fail("field copy claims consciousness");
 if (!texts.includes("transformer")) fail("field never names the transformer");
 if (!texts.includes("754")) fail("field never names motif grams");
+if (!/ring attractor/i.test(texts)) fail("field never names the ring attractor");
+if (!/corollary/i.test(texts)) fail("field never names corollary discharge");
+if (!/interference/i.test(texts)) fail("field never names analog interference");
+if (!texts.includes("Miller 2026")) fail("field never cites Miller 2026");
 
 const hz0 = headingHz(0);
 const hzPi = headingHz(Math.PI);
@@ -59,7 +63,14 @@ for (let i = 0; i < HOLD; i++) noteField(field, "tick", { residual: 0.12 });
 if (field.i !== 4) fail(`res did not land after hold (i=${field.i})`);
 
 for (let i = 0; i < HOLD; i++) noteField(field, "tick", { residual: 0.12 });
-if (field.i !== 5) fail(`mass did not land after hold (i=${field.i})`);
+if (field.i !== 4) fail(`analog advanced without intf (i=${field.i})`);
+
+for (let i = 0; i < HOLD; i++) noteField(field, "tick", { residual: 0.12, intf: 0.08 });
+if (field.i !== 5) fail(`analog did not land after intf (i=${field.i})`);
+if (currentField(field).id !== "analog") fail("fifth beat is not analog");
+
+for (let i = 0; i < HOLD; i++) noteField(field, "tick", { residual: 0.12, intf: 0.08 });
+if (field.i !== 6) fail(`mass did not land after analog (i=${field.i})`);
 if (currentField(field).id !== "mass") fail("last beat is not mass");
 
 const html = readFileSync(join(__dirname, "public", "index.html"), "utf8");

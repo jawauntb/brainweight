@@ -12,7 +12,7 @@ export const BEATS = [
   {
     id: "steer",
     need: "steer",
-    text: "EPG holds a direction. PEN shifts it. 47 cells, not a fly, not a person.",
+    text: "A ring attractor. EPG holds a bump. PEN shifts it. 47 cells, not a fly.",
   },
   {
     id: "kick",
@@ -27,7 +27,12 @@ export const BEATS = [
   {
     id: "res",
     need: "res",
-    text: "res is the top failing to predict the floor. Zero is a lock, not a thought.",
+    text: "Corollary discharge. The top predicted the floor. Residual is the miss, not a thought.",
+  },
+  {
+    id: "analog",
+    need: "analog",
+    text: "Analog interference. Miller 2026. W stores. Neighbors add or cancel. intf is that sum.",
   },
   {
     id: "mass",
@@ -40,7 +45,7 @@ export function createField() {
   return {
     i: 0,
     held: 0,
-    saw: { steer: false, kick: false, res: false },
+    saw: { steer: false, kick: false, res: false, analog: false },
   };
 }
 
@@ -61,6 +66,11 @@ export function noteField(field, ev, m) {
   if (ev === "kick") field.saw.kick = true;
   const res = m && Number(m.residual);
   if (Number.isFinite(res) && res > 0.06) field.saw.res = true;
+  const intf = m && Number(m.intf);
+  const wave = m && Number(m.wave);
+  if ((Number.isFinite(intf) && Math.abs(intf) > 0.04) || (Number.isFinite(wave) && wave > 0.035)) {
+    field.saw.analog = true;
+  }
   if (ev === "tick") field.held = (field.held || 0) + 1;
   else field.held = HOLD;
   if (canAdvance(field)) {
@@ -78,6 +88,7 @@ function canAdvance(field) {
   if ((field.held || 0) < HOLD) return false;
   if (next.need === "pair") return field.saw.steer && field.saw.kick;
   if (next.need === "res") return field.saw.res;
-  if (next.need === "mass") return field.saw.steer && field.saw.kick && field.saw.res;
+  if (next.need === "analog") return field.saw.analog;
+  if (next.need === "mass") return field.saw.steer && field.saw.kick && field.saw.res && field.saw.analog;
   return false;
 }
