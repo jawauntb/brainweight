@@ -13,6 +13,7 @@ export const OPENROUTER_DEFAULT_MODEL = "typesafe/jev-latest";
 
 export const VERBS = ["drag", "kick", "wait", "listen"];
 export const MATTERS = ["circuit", "pair", "mass", "lock"];
+export const MOMENTS = ["reaffer", "lock", "wave", "fission", "seek"];
 
 export const LOCK_LEVELS = [
   "Lock. Residual near zero. Copies identical. A statue, not a thought.",
@@ -25,6 +26,14 @@ export const HINT = {
   kick: "J. copies agree. that is a lock, not a chorus.",
   wait: "let it seek. score is the only honest number on the ring.",
   listen: "watch res. the top is not predicting the floor.",
+};
+
+export const MOMENT_HINT = {
+  reaffer: "the top predicted the floor. that is an echo, not a mind.",
+  lock: "copies agree. a statue, not a chorus.",
+  wave: "the bump is walking. analog sum, not a thought.",
+  fission: "the copies disagree. population is doing work.",
+  seek: "the ring is turning toward the heading you pointed.",
 };
 
 export const QUESTIONS = {
@@ -62,6 +71,27 @@ export const QUESTIONS = {
       lock: "Perfect corr and zero residual are a lock, not intelligence.",
     },
   },
+  moment: {
+    type: "choice",
+    instructions:
+      "What dynamical fact is live on `stack` right now? This is a 47-cell fly heading motif plus a tiny transformer, stacked and looped. Not a mind. Pick the fact.",
+    criteria: {
+      reaffer: "The top predicted the floor. Residual is small. An echo.",
+      lock: "Copies agree and residual is near zero. A statue.",
+      wave: "Heading is walking. Analog interference across copies.",
+      fission: "Copies disagree. Population is doing work.",
+      seek: "The ring is turning toward a target the visitor pointed.",
+    },
+  },
+  emergent: {
+    type: "noul",
+    instructions:
+      "Is this a regime that needs both population (`stack.N` > 1) and depth (`stack.K` > 1)? True only if a single copy or a single pass would look different.",
+    criteria: {
+      true: "Wave, interference, fission, or depth change that N=1 or K=1 cannot make.",
+      false: "A single ring or a single pass would look the same.",
+    },
+  },
 };
 
 export function buildJevMessages(state) {
@@ -70,6 +100,8 @@ export function buildJevMessages(state) {
     lock: { score: "0, 1, or 2" },
     thought: { noul: "0..1" },
     matter: { choice: MATTERS },
+    moment: { choice: MOMENTS },
+    emergent: { noul: "0..1" },
   };
   return [
     {
@@ -103,6 +135,12 @@ export function packState(m, field) {
       gesture: src.gesture || null,
       pair: src.pair !== false,
       field: field && field.id ? field.id : null,
+      N: num(src.N),
+      K: num(src.K),
+      wave: num(src.wave),
+      isolate: num(src.isolate),
+      depth: num(src.depth),
+      passes: Array.isArray(src.passes) ? src.passes.slice(0, 16) : [],
     },
     note: "47-cell fly heading motif plus a tiny transformer. Not a fly brain. Not a human brain.",
   };
@@ -131,6 +169,25 @@ export function judge(state) {
   else if (stack.field === "mass") matter = "mass";
   else if (stack.pair) matter = "pair";
 
+  let moment = "seek";
+  if (res < 0.06 && corr > 0.85) moment = "lock";
+  else if (corr < 0.42) moment = "fission";
+  else if (num(stack.wave) > 0.035) moment = "wave";
+  else if (res < 0.09 && num(stack.order) > 0.30) moment = "reaffer";
+
+  const pop = num(stack.N);
+  const loops = num(stack.K);
+  let emergent = 0.08;
+  if (pop > 1 && loops > 1) {
+    if (Math.abs(num(stack.intf)) > 0.04 || num(stack.wave) > 0.03 || num(stack.depth) > 0.02) {
+      emergent = 0.78;
+    } else if (corr < 0.42) {
+      emergent = 0.64;
+    } else {
+      emergent = 0.22;
+    }
+  }
+
   return {
     verb: {
       type: "choice",
@@ -156,6 +213,13 @@ export function judge(state) {
       probabilities: oneHot(MATTERS, matter),
       confidence: 0.66,
     },
+    moment: {
+      type: "choice",
+      choice: moment,
+      probabilities: oneHot(MOMENTS, moment),
+      confidence: 0.70,
+    },
+    emergent: { type: "noul", noul: emergent },
   };
 }
 
@@ -171,18 +235,33 @@ export function parseAnswers(answers) {
   const thought = answers.thought ? Number(answers.thought.noul) : NaN;
   const confidence = answers.verb ? Number(answers.verb.confidence) : 0;
   if (!verb || !Number.isFinite(lock) || !Number.isFinite(thought)) return null;
+  const moment = answers.moment && MOMENTS.indexOf(answers.moment.choice) !== -1
+    ? answers.moment.choice
+    : "seek";
+  const emergent = answers.emergent ? Number(answers.emergent.noul) : 0;
   return {
     verb,
     matter,
     lock,
     thought,
+    moment,
+    emergent: Number.isFinite(emergent) ? clamp01(emergent) : 0,
     confidence: Number.isFinite(confidence) ? confidence : 0,
   };
 }
 
 export function act(parsed) {
   if (!parsed) {
-    return { verb: "wait", hint: HINT.wait, thought: 0, lock: 1, matter: "circuit" };
+    return {
+      verb: "wait",
+      hint: HINT.wait,
+      thought: 0,
+      lock: 1,
+      matter: "circuit",
+      moment: "seek",
+      emergent: 0,
+      momentHint: MOMENT_HINT.seek,
+    };
   }
   let verb = parsed.verb;
   if (parsed.thought > 0.72 && parsed.lock >= 1.4) verb = "listen";
@@ -198,6 +277,9 @@ export function act(parsed) {
     thought: parsed.thought,
     lock: parsed.lock,
     matter: parsed.matter,
+    moment: parsed.moment || "seek",
+    emergent: Number.isFinite(parsed.emergent) ? parsed.emergent : 0,
+    momentHint: MOMENT_HINT[parsed.moment] || MOMENT_HINT.seek,
   };
 }
 
