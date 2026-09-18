@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "assay": "node assay-mass.mjs && node assay-circuits.mjs && node assay-play.mjs && node assay-jev.mjs && node gpt/compare.mjs"
+    "assay": "node assay-mass.mjs && node assay-circuits.mjs && node assay-play.mjs && node assay-jev.mjs && node assay-webgpu.mjs && node gpt/compare.mjs"
   },
   "engines": {
     "node": ">=20"

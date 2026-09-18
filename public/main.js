@@ -2,6 +2,7 @@ import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTa
 import { line } from "./verse.js";
 import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
 import { armJev, requestJev, jevStats } from "./ask.js";
+import { armWebgpu, requestWebgpuMass, webgpuStats } from "./gpu.js";
 import { formatGrams, formatCopies, TARGET_COPIES, HUMAN_G, wetGrams } from "./mass.js";
 import { createField, noteField, currentField } from "./field.js";
 import { armTone, hear, setMuted, isMuted, kickTone } from "./tone.js";
@@ -48,6 +49,7 @@ const tGpu = document.getElementById("t-gpu");
 const tMass = document.getElementById("t-mass");
 const tPair = document.getElementById("t-pair");
 const tJev = document.getElementById("t-jev");
+const tWebgpu = document.getElementById("t-webgpu");
 const thoughtsEl = document.getElementById("thoughts");
 const thoughtLog = [];
 const field = createField();
@@ -142,6 +144,7 @@ function playArm() {
   armThink();
   armTone();
   armJev();
+  armWebgpu();
   if (hintEl) hintEl.dataset.mode = "jev";
 }
 
@@ -204,6 +207,12 @@ function writeTelemetry(m) {
   if (hintEl && hintEl.dataset.mode === "jev" && judged.ok && judged.hint) {
     hintEl.hidden = false;
     hintEl.textContent = judged.hint;
+  }
+  const local = webgpuStats();
+  if (tWebgpu) {
+    tWebgpu.textContent = local.ok
+      ? `${formatCopies(local.N)} K${local.K} ${local.regime || "idle"}`
+      : (local.reason || "off");
   }
   if (tMass) {
     if (weighed && weighed.ok) {
@@ -529,6 +538,7 @@ function frame() {
     requestJev(m, currentField(field));
     requestThink(world, frameNo, m);
     requestMass(world, m);
+    requestWebgpuMass(m.K, m.target);
   }
   draw();
   requestAnimationFrame(frame);

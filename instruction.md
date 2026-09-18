@@ -65,6 +65,10 @@ Later PRs. This is the queue. Do not start a later tier in this repo until the e
 
 **Mini GPT, this cut.** `gpt/compare.mjs`: unique-layer twin vs looped fly unit (W then T) on one tiny corpus. Report params and next-token loss. Not a foundation model. Universality (does the GPT grow an EPG-like direction) is still a later column.
 
+**Jev on OpenRouter, this cut.** Jev shipped on OpenRouter in beta (`typesafe/jev-latest`). `server.js` tries `TYPESAFE_API_KEY` against the native systemone endpoint first, then `OPENROUTER_API_KEY` against OpenRouter's chat-completions endpoint (same typed schema, asked for as strict JSON), then the local judge. No key is required to ship; the page works the same on any of the three.
+
+**WebGPU, this cut.** `public/gpu.js` is a fourth tier, alongside the browser window, the deep clock, and `/think/mass`: the visitor's own device stacks and loops W (no T, `pair: false`) at a size read from its own `navigator.gpu` limits, capped at 262,144 units, client-side only. Same gesture rule as the deep clock. Feature-detects `navigator.gpu`, the adapter, and the device; any miss reports `webgpu: unsupported` and leaves every other tier untouched. Do not call this tier the 9.4e6 ceiling; it is a separate, smaller, browser-bound number.
+
 **Ship.** Commit and PR as soon as a check passes. See `AGENTS.md`.
 
 **Pending.** Universality column on the GPT twins. See [`pending.md`](pending.md).
