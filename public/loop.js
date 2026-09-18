@@ -388,6 +388,16 @@ export function attnMatrix(world) {
   return world._attn || null;
 }
 
+export function prediction(world) {
+  return world._pred || null;
+}
+
+export function echoLine(res) {
+  const n = Number(res);
+  if (Number.isFinite(n) && n < 0.09) return "echo. the top predicted the floor.";
+  return "miss. residual is the stack failing to predict itself.";
+}
+
 export function typeEnergy(world) {
   const v = world.vs[0];
   const types = world.types;
