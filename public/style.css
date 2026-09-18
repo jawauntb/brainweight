@@ -72,7 +72,8 @@ body {
 .dock .thoughts,
 .dock .field,
 .dock .depth,
-.dock .moment {
+.dock .moment,
+.dock .atlas {
   pointer-events: none;
 }
 
@@ -211,6 +212,22 @@ body {
 }
 
 .moment.is-emergent { color: var(--committed); }
+
+.atlas {
+  margin: 0;
+  color: var(--animal);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.atlas[data-cx="epg"] { color: var(--mind); }
+.atlas[data-cx="pen"] { color: var(--bound); }
+.atlas[data-cx="peg"] { color: var(--cream); }
+.atlas[data-cx="delta7"] { color: var(--animal); }
+.atlas[data-cx="el"] { color: var(--committed); }
 
 .depth {
   display: flex;
