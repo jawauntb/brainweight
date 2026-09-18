@@ -5,7 +5,7 @@
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { create, setN, step, metrics, injectHeading, kick, wander, setTarget, applyW, applyT, CIRCUIT_JOB, familyOf, attnMatrix } from "./public/loop.js";
+import { create, setN, step, metrics, injectHeading, kick, wander, setTarget, applyW, applyT, CIRCUIT_JOB, familyOf, attnMatrix, prediction, echoLine } from "./public/loop.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const graphPath = join(__dirname, "public", "data", "fly-cx.json");
@@ -228,6 +228,32 @@ function assayDepth(graph) {
   );
 }
 
+function assayEcho(graph) {
+  const world = create(graph, { N: 3, K: 4 });
+  for (let i = 0; i < 6; i++) step(world);
+  const pred = prediction(world);
+  const n = graph.nodes.length;
+  if (!pred || pred.length !== n) fail("prediction() missing after step");
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    const d = pred[i] - world.vs[0][i];
+    sum += d * d;
+  }
+  const rms = Math.sqrt(sum / n);
+  const m = metrics(world);
+  if (Math.abs(rms - m.residual) > 0.02) {
+    fail(`echo rms ${rms.toFixed(4)} != residual ${m.residual.toFixed(4)}`);
+  }
+  const hush = echoLine(0.02);
+  const miss = echoLine(0.18);
+  if (!/echo/i.test(hush)) fail("echoLine(low) is not an echo");
+  if (!/miss/i.test(miss)) fail("echoLine(high) is not a miss");
+  if (/conscious|mind/i.test(hush) || /conscious|mind/i.test(miss)) {
+    fail("echoLine claims a mind");
+  }
+  process.stdout.write(`echo: rms=${rms.toFixed(4)} res=${m.residual.toFixed(4)} line=${hush}\n`);
+}
+
 function assayMix(graph) {
   const paired = create(graph, { N: 1, K: 4 });
   for (let i = 0; i < 6; i++) step(paired);
@@ -306,6 +332,7 @@ function assayPair(graph) {
 const html = readFileSync(join(__dirname, "public", "index.html"), "utf8");
 if (!html.includes("id=\"atlas\"")) fail("index.html missing circuit atlas");
 if (!html.includes("id=\"t-mix\"")) fail("index.html missing mix telemetry");
+if (!html.includes("id=\"echo\"")) fail("index.html missing echo line");
 
 const graph = loadGraph();
 assayMetrics(graph);
@@ -316,6 +343,7 @@ assayWander(graph);
 assaySeek(graph);
 assayGlia(graph);
 assayDepth(graph);
+assayEcho(graph);
 assayMix(graph);
 assayPair(graph);
 

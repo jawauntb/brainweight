@@ -1,4 +1,4 @@
-import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander, CIRCUIT_JOB, familyOf, graphEdges, attnMatrix } from "./loop.js";
+import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander, CIRCUIT_JOB, familyOf, graphEdges, attnMatrix, prediction, echoLine } from "./loop.js";
 import { line } from "./verse.js";
 import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
 import { armJev, requestJev, jevStats } from "./ask.js";
@@ -39,6 +39,7 @@ const btnPanels = document.getElementById("btn-panels");
 const hintEl = document.getElementById("hint");
 const momentEl = document.getElementById("moment");
 const atlasEl = document.getElementById("atlas");
+const echoEl = document.getElementById("echo");
 const depthEl = document.getElementById("depth");
 const fieldEl = document.getElementById("field");
 const fieldStep = document.getElementById("field-step");
@@ -218,6 +219,11 @@ function writeTelemetry(m) {
   tR.textContent = fmt(m.order, 2);
   tCorr.textContent = fmt(m.corr, 2);
   tRes.textContent = fmt(m.residual, 3);
+  if (echoEl) {
+    echoEl.hidden = false;
+    echoEl.textContent = echoLine(m.residual);
+    echoEl.classList.toggle("is-miss", (m.residual || 0) >= 0.09);
+  }
   if (tReg) tReg.textContent = m.gesture || m.regime || "idle";
   if (tIntf) tIntf.textContent = fmt(m.intf, 2);
   if (tCx) tCx.textContent = m.circuit || "epg";
@@ -527,6 +533,35 @@ function drawTick(layer, heading) {
   ctx.fill();
 }
 
+function drawEcho(nearL, farL, nodelist, pred, after) {
+  if (!pred || !after || !nodelist || !nodelist.length) return;
+  const n = nodelist.length;
+  const same = nearL === farL;
+  ctx.lineCap = "round";
+  for (let i = 0; i < n; i++) {
+    const err = Math.abs((pred[i] || 0) - (after[i] || 0));
+    if (err < 0.025) continue;
+    const miss = Math.min(1, err / 0.22);
+    const node = nodelist[i];
+    const p0 = cellXY(ptA, farL, node);
+    const p1 = cellXY(ptB, nearL, node);
+    if (same) {
+      ctx.beginPath();
+      ctx.arc(p1.x, p1.y, (2.2 + miss * 4.2) * nearL.scale, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(246, 214, 122, ${0.10 + miss * 0.42})`;
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      continue;
+    }
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.strokeStyle = `rgba(246, 214, 122, ${0.06 + miss * 0.40})`;
+    ctx.lineWidth = 0.9 + miss * 1.4;
+    ctx.stroke();
+  }
+}
+
 function drawFilaments(near, far, nearL, farL, epg, nodelist) {
   ctx.lineCap = "round";
   for (let i = 0; i < epg.length; i++) {
@@ -567,6 +602,7 @@ function draw() {
   for (let i = n - 2; i >= 0; i--) {
     drawFilaments(layers[i], layers[i + 1], geom[i], geom[i + 1], epg, nodelist);
   }
+  drawEcho(geom[0], geom[n - 1], nodelist, prediction(world), layers[0].v);
   for (let i = n - 1; i >= 0; i--) {
     const v = layers[i].v;
     const layer = geom[i];
