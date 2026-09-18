@@ -140,6 +140,7 @@ export function packState(m, field) {
       wave: num(src.wave),
       isolate: num(src.isolate),
       depth: num(src.depth),
+      mix: num(src.mix),
       passes: Array.isArray(src.passes) ? src.passes.slice(0, 16) : [],
     },
     note: "47-cell fly heading motif plus a tiny transformer. Not a fly brain. Not a human brain.",

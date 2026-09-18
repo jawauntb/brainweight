@@ -1,4 +1,4 @@
-import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander, CIRCUIT_JOB, familyOf } from "./loop.js";
+import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander, CIRCUIT_JOB, familyOf, graphEdges, attnMatrix } from "./loop.js";
 import { line } from "./verse.js";
 import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
 import { armJev, requestJev, jevStats } from "./ask.js";
@@ -60,6 +60,7 @@ const tMass = document.getElementById("t-mass");
 const tPair = document.getElementById("t-pair");
 const tJev = document.getElementById("t-jev");
 const tDepth = document.getElementById("t-depth");
+const tMix = document.getElementById("t-mix");
 const tWebgpu = document.getElementById("t-webgpu");
 const thoughtsEl = document.getElementById("thoughts");
 const thoughtLog = [];
@@ -247,6 +248,7 @@ function writeTelemetry(m) {
     hintEl.textContent = judged.hint;
   }
   if (tDepth) tDepth.textContent = fmt(m.depth, 3);
+  if (tMix) tMix.textContent = fmt(m.mix, 2);
   writeDepth(m);
   if (momentEl && judged.ok && judged.momentHint) {
     momentEl.hidden = false;
@@ -353,6 +355,48 @@ function cellXY(out, layer, node) {
   out.x = layer.cx + node.x * layer.rx;
   out.y = layer.cy + node.y * layer.ry;
   return out;
+}
+
+function drawPair(layer, nodelist) {
+  if (!world || world.pair === false) return;
+  const edges = graphEdges(world);
+  const attn = attnMatrix(world);
+  const n = nodelist.length;
+  ctx.lineCap = "round";
+  for (let e = 0; e < edges.length; e++) {
+    const ed = edges[e];
+    const a = nodelist[ed.s];
+    const b = nodelist[ed.t];
+    if (!a || !b) continue;
+    const p0 = cellXY(ptA, layer, a);
+    const p1 = cellXY(ptB, layer, b);
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.strokeStyle = "rgba(127, 178, 255, 0.10)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+  if (!attn || attn.length !== n * n) return;
+  const floor = 2.4 / n;
+  for (let i = 0; i < n; i++) {
+    const row = i * n;
+    for (let j = 0; j < n; j++) {
+      const a = attn[row + j];
+      if (a < floor) continue;
+      const src = nodelist[j];
+      const dst = nodelist[i];
+      if (!src || !dst) continue;
+      const p0 = cellXY(ptA, layer, src);
+      const p1 = cellXY(ptB, layer, dst);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.strokeStyle = `rgba(246, 214, 122, ${0.08 + a * 0.55})`;
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+    }
+  }
 }
 
 function drawRingTrack(layer) {
@@ -529,6 +573,7 @@ function draw() {
     const read = stackHeading(v, epg, nodelist);
     drawRingTrack(layer);
     if (i === 0) drawHeadingGlow(layer, read.heading, read.order);
+    if (i === 0) drawPair(layer, nodelist);
     drawInner(v, nodelist, epgSet, layer);
     drawEpg(v, nodelist, epg, layer);
     drawTick(layer, read.heading);

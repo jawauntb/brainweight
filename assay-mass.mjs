@@ -45,7 +45,7 @@ if (!loop.includes("export function applyT")) fail("loop.js missing applyT");
 if (!loop.includes("applyW(vs[i], graph.edges, _inc, world.gainEff)")) {
   fail("loop.js step dropped applyW");
 }
-if (!loop.includes("applyT(vs[i], graph.nodes, world._tbuf)")) {
+if (!loop.includes("applyT(vs[i], graph.nodes, world._tbuf")) {
   fail("loop.js step does not apply T after W");
 }
 

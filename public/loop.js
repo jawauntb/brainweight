@@ -104,6 +104,8 @@ export function setN(world, N) {
     vp: new Float32Array(n * TD),
     score: new Float32Array(n),
   };
+  world._attn = new Float32Array(n * n);
+  world.mix = 0;
   world.residual = 0;
   const { heading } = epgOrder(world);
   world.drive = heading;
@@ -203,7 +205,7 @@ export function applyMotif(v, graph, K, gain) {
   return v;
 }
 
-export function applyT(v, nodes, buf) {
+export function applyT(v, nodes, buf, attn) {
   const n = v.length;
   const w = tWeights();
   const d = w.d;
@@ -212,6 +214,9 @@ export function applyT(v, nodes, buf) {
   const vp = buf.vp;
   const score = buf.score;
   const inv = 1 / Math.sqrt(d);
+  if (attn && attn.length === n * n) {
+    for (let a = 0; a < attn.length; a++) attn[a] = 0;
+  }
   for (let i = 0; i < n; i++) {
     const a = v[i];
     const px = nodes[i].x;
@@ -241,6 +246,10 @@ export function applyT(v, nodes, buf) {
       sum += e;
     }
     const invs = sum > 1e-12 ? 1 / sum : 0;
+    if (attn && attn.length === n * n) {
+      const row = i * n;
+      for (let j = 0; j < n; j++) attn[row + j] = score[j] * invs;
+    }
     const hid = w.hid;
     for (let u = 0; u < T_FF; u++) hid[u] = 0;
     for (let t = 0; t < d; t++) {
@@ -276,7 +285,9 @@ export function step(world) {
     }
     for (let i = 0; i < N; i++) {
       applyW(vs[i], graph.edges, _inc, world.gainEff);
-      if (world.pair !== false) applyT(vs[i], graph.nodes, world._tbuf);
+      if (world.pair !== false) {
+        applyT(vs[i], graph.nodes, world._tbuf, (i === 0 && k === K - 1) ? world._attn : null);
+      }
     }
     let sum = 0;
     const after = vs[0];
@@ -294,6 +305,7 @@ export function step(world) {
   world.prevResidual = prev;
   world.residual = safeRes;
   world.depth = K < 2 ? 0 : Math.abs((world.passes[K - 1] || 0) - (world.passes[0] || 0));
+  world.mix = world.pair !== false ? attentionMix(world._attn, graph.edges, n) : 0;
   readWorld(world);
 }
 
@@ -319,6 +331,7 @@ export function metrics(world) {
     residual: world.residual,
     passes: world.passes ? world.passes.slice() : [],
     depth: world.depth || 0,
+    mix: world.mix || 0,
     second: world.second || 0,
     wave: world.wave || 0,
     isolate,
@@ -365,6 +378,14 @@ export function nodes(world) {
 
 export function epgIndex(world) {
   return world.epg;
+}
+
+export function graphEdges(world) {
+  return world.graph && world.graph.edges ? world.graph.edges : [];
+}
+
+export function attnMatrix(world) {
+  return world._attn || null;
 }
 
 export function typeEnergy(world) {
@@ -542,6 +563,18 @@ export function applyW(v, edges, inc, gain) {
   }
   mean /= n;
   for (let i = 0; i < n; i++) v[i] = clamp1(v[i] - mean * MEAN_PULL);
+}
+
+function attentionMix(attn, edges, n) {
+  if (!attn || !edges || !n) return 0;
+  let on = 0;
+  for (let e = 0; e < edges.length; e++) {
+    const ed = edges[e];
+    on += attn[ed.t * n + ed.s] || 0;
+  }
+  const mix = 1 - on / n;
+  if (!Number.isFinite(mix)) return 0;
+  return mix < 0 ? 0 : mix > 1 ? 1 : mix;
 }
 
 function tanh(x) {
