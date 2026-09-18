@@ -32,6 +32,7 @@ Do not force-push. Do not skip hooks. Do not commit secrets, `.env`, or `THINK_T
 - `/healthz` must return `ok`
 - Railway project: `brainweight`. Deploy from the repo root, not `modal_mind/`.
 - Modal app: `brainweight-mind`. `/think` is the deep clock. `/think/mass` is the 9.4e6 W+T unit run.
+- Jev tries `TYPESAFE_API_KEY` (native), then `OPENROUTER_API_KEY` (`typesafe/jev-latest` on OpenRouter), then the local judge. Neither key is required to ship.
 
 ## Do not
 

@@ -5,6 +5,12 @@
 export const MODEL = "jev-latest";
 export const JEV_URL = "https://api.typesafe.ai/v1/systemone";
 
+// Jev is also live on OpenRouter (in beta): openrouter.ai/~typesafe/jev-latest.
+// That is a chat-completions endpoint, not the native systemone schema above,
+// so ask it for the same typed answers as strict JSON in a message.
+export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+export const OPENROUTER_DEFAULT_MODEL = "typesafe/jev-latest";
+
 export const VERBS = ["drag", "kick", "wait", "listen"];
 export const MATTERS = ["circuit", "pair", "mass", "lock"];
 
@@ -57,6 +63,28 @@ export const QUESTIONS = {
     },
   },
 };
+
+export function buildJevMessages(state) {
+  const schema = {
+    verb: { choice: VERBS, confidence: "0..1" },
+    lock: { score: "0, 1, or 2" },
+    thought: { noul: "0..1" },
+    matter: { choice: MATTERS },
+  };
+  return [
+    {
+      role: "system",
+      content:
+        "You are Jev, TypeSafe's System One model. Answer as strict JSON only, no prose, " +
+        "matching this schema: " + JSON.stringify(schema) + ". " +
+        "Use the questions and criteria in the user message to choose each field.",
+    },
+    {
+      role: "user",
+      content: JSON.stringify({ state, questions: QUESTIONS }),
+    },
+  ];
+}
 
 export function packState(m, field) {
   const src = m && typeof m === "object" ? m : {};

@@ -8,6 +8,9 @@ import { dirname, join } from "path";
 import {
   QUESTIONS,
   VERBS,
+  OPENROUTER_URL,
+  OPENROUTER_DEFAULT_MODEL,
+  buildJevMessages,
   packState,
   judge,
   parseAnswers,
@@ -46,10 +49,24 @@ if (/human brain/i.test(done.hint) && !done.hint.includes("not a human brain")) 
   fail("hint claims a human brain");
 }
 
+// Jev is live on OpenRouter now too. A dedicated TypeSafe key stays first choice;
+// OpenRouter is the lower-friction fallback before the local judge.
+if (!OPENROUTER_URL.includes("openrouter.ai")) fail("OPENROUTER_URL is wrong");
+if (!OPENROUTER_DEFAULT_MODEL.includes("jev")) fail("OPENROUTER_DEFAULT_MODEL is wrong");
+const messages = buildJevMessages(lockState);
+if (!Array.isArray(messages) || messages.length < 2) fail("buildJevMessages did not build messages");
+if (!messages.some((m) => m.role === "system" && /json/i.test(m.content))) {
+  fail("buildJevMessages does not ask for JSON");
+}
+if (!JSON.parse(messages[1].content).state) fail("buildJevMessages dropped state");
+
 const server = readFileSync(join(__dirname, "server.js"), "utf8");
 if (!server.includes("app.post(\"/jev\"")) fail("server.js missing POST /jev");
 if (!server.includes("JEV_URL") || !server.includes("askJev")) fail("server.js does not call Jev");
 if (!server.includes("TYPESAFE_API_KEY")) fail("server.js does not read TYPESAFE_API_KEY");
+if (!server.includes("OPENROUTER_API_KEY") || !server.includes("askOpenRouter")) {
+  fail("server.js does not fall back to OpenRouter");
+}
 
 const html = readFileSync(join(__dirname, "public", "index.html"), "utf8");
 if (!html.includes("id=\"t-jev\"")) fail("index.html missing jev telemetry");

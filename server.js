@@ -2,7 +2,18 @@ import express from 'express';
 import compression from 'compression';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { QUESTIONS, MODEL, JEV_URL, packState, judge, parseAnswers, act } from './public/jev.js';
+import {
+  QUESTIONS,
+  MODEL,
+  JEV_URL,
+  OPENROUTER_URL,
+  OPENROUTER_DEFAULT_MODEL,
+  buildJevMessages,
+  packState,
+  judge,
+  parseAnswers,
+  act,
+} from './public/jev.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -57,10 +68,9 @@ app.post('/think', (req, res) => proxyThink(req, res, 28000));
 app.post('/think/mass', (req, res) => proxyThink(req, res, 300000));
 app.get('/think/status', thinkStatus);
 
-async function askJev(state) {
+async function askTypesafe(state) {
   const key = process.env.TYPESAFE_API_KEY || "";
-  if (!key) return { source: "local", answers: judge(state), model: "local" };
-  const t0 = Date.now();
+  if (!key) return null;
   try {
     const r = await fetch(JEV_URL, {
       method: "POST",
@@ -76,18 +86,56 @@ async function askJev(state) {
       signal: AbortSignal.timeout(2500),
     });
     const data = await r.json();
-    if (!r.ok || !data || !data.answers) {
-      return { source: "local", answers: judge(state), model: "local", reason: "jev-http" };
-    }
-    return {
-      source: "jev",
-      answers: data.answers,
-      model: data.model || MODEL,
-      ms: Date.now() - t0,
-    };
+    if (!r.ok || !data || !data.answers) return null;
+    return { source: "jev", answers: data.answers, model: data.model || MODEL };
   } catch {
-    return { source: "local", answers: judge(state), model: "local", reason: "jev-down" };
+    return null;
   }
+}
+
+// Jev is now live on OpenRouter too (openrouter.ai/~typesafe/jev-latest, beta).
+// That lowers the bar to a live judge: an OPENROUTER_API_KEY many visitors
+// already hold works, not only a dedicated TYPESAFE_API_KEY.
+async function askOpenRouter(state) {
+  const key = process.env.OPENROUTER_API_KEY || "";
+  if (!key) return null;
+  const model = process.env.OPENROUTER_JEV_MODEL || OPENROUTER_DEFAULT_MODEL;
+  try {
+    const r = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${key}`,
+        "content-type": "application/json",
+        "http-referer": "https://brainweight-production.up.railway.app",
+        "x-title": "brainweight",
+      },
+      body: JSON.stringify({
+        model,
+        messages: buildJevMessages(state),
+        response_format: { type: "json_object" },
+      }),
+      signal: AbortSignal.timeout(4000),
+    });
+    const data = await r.json();
+    const content = data && data.choices && data.choices[0] && data.choices[0].message
+      ? data.choices[0].message.content
+      : null;
+    if (!r.ok || !content) return null;
+    const answers = JSON.parse(content);
+    return { source: "openrouter", answers, model: data.model || model };
+  } catch {
+    return null;
+  }
+}
+
+async function askJev(state) {
+  const t0 = Date.now();
+  const viaTypesafe = await askTypesafe(state);
+  if (viaTypesafe) return { ...viaTypesafe, ms: Date.now() - t0 };
+  const viaOpenRouter = await askOpenRouter(state);
+  if (viaOpenRouter) return { ...viaOpenRouter, ms: Date.now() - t0 };
+  const noKey = !process.env.TYPESAFE_API_KEY && !process.env.OPENROUTER_API_KEY;
+  return { source: "local", answers: judge(state), model: "local", reason: noKey ? "no-key" : "jev-down" };
 }
 
 app.post("/jev", async (req, res) => {
@@ -121,7 +169,9 @@ app.post("/jev", async (req, res) => {
 app.get("/jev/status", (_req, res) => {
   res.status(200).json({
     ok: true,
-    configured: Boolean(process.env.TYPESAFE_API_KEY),
+    configured: Boolean(process.env.TYPESAFE_API_KEY) || Boolean(process.env.OPENROUTER_API_KEY),
+    typesafe: Boolean(process.env.TYPESAFE_API_KEY),
+    openrouter: Boolean(process.env.OPENROUTER_API_KEY),
     model: MODEL,
   });
 });
