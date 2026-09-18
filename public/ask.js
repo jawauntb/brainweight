@@ -51,6 +51,7 @@ export async function requestJev(m, field) {
           wave: m && m.wave,
           isolate: m && m.isolate,
           depth: m && m.depth,
+          mix: m && m.mix,
           passes: m && m.passes,
         },
         field: field ? { id: field.id, i: field.i } : null,

@@ -5,7 +5,7 @@
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { create, setN, step, metrics, injectHeading, kick, wander, setTarget, applyW, applyT, CIRCUIT_JOB, familyOf } from "./public/loop.js";
+import { create, setN, step, metrics, injectHeading, kick, wander, setTarget, applyW, applyT, CIRCUIT_JOB, familyOf, attnMatrix } from "./public/loop.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const graphPath = join(__dirname, "public", "data", "fly-cx.json");
@@ -228,6 +228,29 @@ function assayDepth(graph) {
   );
 }
 
+function assayMix(graph) {
+  const paired = create(graph, { N: 1, K: 4 });
+  for (let i = 0; i < 6; i++) step(paired);
+  const m = metrics(paired);
+  if (!Number.isFinite(m.mix)) fail(`mix ${m.mix} is not finite`);
+  if (m.mix < 0.12) fail(`mix ${m.mix} is too low; T is sitting on W`);
+  if (m.mix > 0.98) fail(`mix ${m.mix} is a random soup`);
+  const attn = attnMatrix(paired);
+  const n = graph.nodes.length;
+  if (!attn || attn.length !== n * n) fail("attn matrix missing after a paired step");
+  let row = 0;
+  for (let j = 0; j < n; j++) row += attn[j];
+  if (Math.abs(row - 1) > 0.05) fail(`attn row 0 sums to ${row}, not 1`);
+
+  const naked = create(graph, { N: 1, K: 1 });
+  naked.pair = false;
+  step(naked);
+  const off = metrics(naked);
+  if (off.mix !== 0) fail(`W-only mix ${off.mix} should be 0`);
+
+  process.stdout.write(`mix: paired=${m.mix.toFixed(3)} w-only=${off.mix.toFixed(3)}\n`);
+}
+
 function assayPair(graph) {
   const world = create(graph, { N: 3, K: 4 });
   const m0 = metrics(world);
@@ -282,6 +305,7 @@ function assayPair(graph) {
 
 const html = readFileSync(join(__dirname, "public", "index.html"), "utf8");
 if (!html.includes("id=\"atlas\"")) fail("index.html missing circuit atlas");
+if (!html.includes("id=\"t-mix\"")) fail("index.html missing mix telemetry");
 
 const graph = loadGraph();
 assayMetrics(graph);
@@ -292,6 +316,7 @@ assayWander(graph);
 assaySeek(graph);
 assayGlia(graph);
 assayDepth(graph);
+assayMix(graph);
 assayPair(graph);
 
 process.stdout.write("PASS\n");
