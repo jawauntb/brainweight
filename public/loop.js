@@ -20,6 +20,18 @@ const TD = 8;
 const T_FF = 16;
 const T_MIX = 0.18;
 
+export const CIRCUIT_JOB = {
+  epg: "EPG holds the heading. A bump on a ring, not a mind.",
+  pen: "PEN shifts the bump. That is how the compass turns.",
+  peg: "PEG feeds the heading back. The ring hears its own ask.",
+  delta7: "Delta7 inhibits and sharpens. The bump stays a bump.",
+  el: "EL is the extra ring. Same motif, another loop.",
+};
+
+export function familyOf(type) {
+  return typeFamily(type || "");
+}
+
 let Tw = null;
 
 let memo = null;

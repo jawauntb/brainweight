@@ -5,7 +5,7 @@
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { create, setN, step, metrics, injectHeading, kick, wander, setTarget, applyW, applyT } from "./public/loop.js";
+import { create, setN, step, metrics, injectHeading, kick, wander, setTarget, applyW, applyT, CIRCUIT_JOB, familyOf } from "./public/loop.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const graphPath = join(__dirname, "public", "data", "fly-cx.json");
@@ -50,6 +50,15 @@ function assayMetrics(graph) {
   if (typeof m.circuit !== "string" || CIRCUITS.indexOf(m.circuit) === -1) {
     fail(`metrics().circuit is not one of ${CIRCUITS.join("|")}: ${m.circuit}`);
   }
+  for (const key of CIRCUITS) {
+    if (!CIRCUIT_JOB[key] || CIRCUIT_JOB[key].length < 12) fail(`CIRCUIT_JOB.${key} is missing`);
+    if (/human brain/i.test(CIRCUIT_JOB[key]) && !CIRCUIT_JOB[key].includes("not a human")) {
+      fail(`CIRCUIT_JOB.${key} claims a human brain`);
+    }
+  }
+  if (familyOf("EPG") !== "epg") fail("familyOf(EPG) is not epg");
+  if (familyOf("PEN_a") !== "pen") fail("familyOf(PEN_a) is not pen");
+  if (familyOf("Delta7") !== "delta7") fail("familyOf(Delta7) is not delta7");
 
   process.stdout.write(
     `metrics: epg=${m.epg.toFixed(4)} pen=${m.pen.toFixed(4)} peg=${m.peg.toFixed(4)} ` +
@@ -270,6 +279,9 @@ function assayPair(graph) {
       `stepL1=${stepDiff.toFixed(4)}\n`
   );
 }
+
+const html = readFileSync(join(__dirname, "public", "index.html"), "utf8");
+if (!html.includes("id=\"atlas\"")) fail("index.html missing circuit atlas");
 
 const graph = loadGraph();
 assayMetrics(graph);

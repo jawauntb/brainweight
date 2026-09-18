@@ -1,4 +1,4 @@
-import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander } from "./loop.js";
+import { load, create, setN, setK, step, metrics, stacks, nodes, epgIndex, setTarget, kick, wander, CIRCUIT_JOB, familyOf } from "./loop.js";
 import { line } from "./verse.js";
 import { armThink, requestThink, requestMass, thinkStats, massStats } from "./think.js";
 import { armJev, requestJev, jevStats } from "./ask.js";
@@ -9,6 +9,13 @@ import { armTone, hear, setMuted, isMuted, kickTone } from "./tone.js";
 
 const NACRE_SIZE = 96;
 const PEARL = "246, 214, 122";
+const FAMILY_RGB = {
+  epg: "127, 178, 255",
+  pen: "165, 224, 255",
+  peg: "242, 238, 230",
+  delta7: "255, 209, 92",
+  el: "246, 214, 122",
+};
 
 const nacreTiles = new Map();
 const nacrePatterns = new Map();
@@ -31,6 +38,7 @@ const btnMute = document.getElementById("btn-mute");
 const btnPanels = document.getElementById("btn-panels");
 const hintEl = document.getElementById("hint");
 const momentEl = document.getElementById("moment");
+const atlasEl = document.getElementById("atlas");
 const depthEl = document.getElementById("depth");
 const fieldEl = document.getElementById("field");
 const fieldStep = document.getElementById("field-step");
@@ -212,6 +220,12 @@ function writeTelemetry(m) {
   if (tReg) tReg.textContent = m.gesture || m.regime || "idle";
   if (tIntf) tIntf.textContent = fmt(m.intf, 2);
   if (tCx) tCx.textContent = m.circuit || "epg";
+  if (atlasEl) {
+    const job = CIRCUIT_JOB[m.circuit] || CIRCUIT_JOB.epg;
+    atlasEl.hidden = false;
+    atlasEl.textContent = job;
+    atlasEl.dataset.cx = m.circuit || "epg";
+  }
   if (tScore) tScore.textContent = fmt(m.score, 2);
   if (tErr) tErr.textContent = fmt(m.error, 2);
   if (tG) tG.textContent = fmt(m.g, 2);
@@ -350,6 +364,10 @@ function drawRingTrack(layer) {
   ctx.stroke();
 }
 
+function familyRgb(node) {
+  return FAMILY_RGB[familyOf(node && node.type)] || FAMILY_RGB.epg;
+}
+
 function drawInner(v, nodelist, epgSet, layer) {
   const fade = 0.28 + 0.52 * (1 - layer.depth);
   for (let i = 0; i < nodelist.length; i++) {
@@ -360,9 +378,7 @@ function drawInner(v, nodelist, epgSet, layer) {
     const r = (1.15 + mag * 1.6) * layer.scale;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = node.inh
-      ? `rgba(165, 224, 255, ${(0.10 + mag * 0.28) * fade})`
-      : `rgba(127, 178, 255, ${(0.12 + mag * 0.32) * fade})`;
+    ctx.fillStyle = `rgba(${familyRgb(node)}, ${(0.10 + mag * 0.36) * fade})`;
     ctx.fill();
   }
 }
@@ -378,7 +394,7 @@ function drawEpg(v, nodelist, epg, layer) {
     const heat = mag < 0.18 ? 0 : Math.min(1, (mag - 0.18) / 0.42);
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(127, 178, 255, ${(0.14 + mag * 0.38) * fade})`;
+    ctx.fillStyle = `rgba(${FAMILY_RGB.epg}, ${(0.14 + mag * 0.38) * fade})`;
     ctx.fill();
     if (heat > 0) {
       fillNacreDot(p.x, p.y, r, PEARL, heat * (0.42 + mag * 0.48) * fade);
