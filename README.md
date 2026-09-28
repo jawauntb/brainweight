@@ -32,6 +32,10 @@ Emergence here means a dynamical regime that neither a single copy nor a single 
 
 The wet-mass estimate already includes connective tissue, glia, and neuropil. Zheng's volume is the whole organ, not neurons alone. The cell-count split is labeled: fly neurons are 91.8% of brain cells (Raji and Potter 2021). That is not a weighing. Human tissue is about half glia. Motif-full at 1.9e7 would be those grams. This cut pairs a tiny transformer with each motif, so the live stack is 9.4e6 units and about 754 g of motif, not 1508 g of a human brain.
 
+## The primitive
+
+Loop a unit on itself and it stops. Run this stack undriven, with N of 2 or more, and the W then T pass settles on a nonzero fixed point where every layer is equal, so any K leaves it where it is. A lone layer (N of 1) decays to zero: it has no such point. The point is a pair, two stable fixed points about 6e-4 apart, each with a minus clock half a turn away on the ring (|p| 1.5266 and 1.5245). This is the primitive lattice animal unit. [lattice-animal](https://github.com/jawauntb/lattice-animal) compiles it into `public/data/primitive.json`, births every mind on it, lets a resting mind coast there for free, and reads a driven mind as its departure from it. `node assay-primitive.mjs` runs this repo's own `step()` undriven (tissue on, seek and glia off) at N of 2 to 4, K of 1, 3 and 8, and three seeds, and checks every run lands on that pair. It is measured, not proved. It says nothing about a whole fly or a mind.
+
 ## Run
 
 ```
